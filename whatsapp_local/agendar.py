@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Leandro Garcia
+# SPDX-License-Identifier: MIT
 """Agenda `wa sync`: launchd no macOS, timer do systemd (ou cron) no Linux."""
 import os
 import shutil

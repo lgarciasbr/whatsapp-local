@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 Leandro Garcia
+# SPDX-License-Identifier: MIT
 """Instalador do whatsapp-local (macOS e Linux; Windows não testado).
 
     python3 instalar.py

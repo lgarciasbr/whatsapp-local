@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Leandro Garcia
+# SPDX-License-Identifier: MIT
 """whatsapp-local: lê conversas do WhatsApp (app do Mac ou servidor WAHA), transcreve
 áudio e vídeo nesta máquina com whisper.cpp e exporta para Markdown.
 

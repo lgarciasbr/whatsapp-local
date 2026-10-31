@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Filipe
+# SPDX-FileCopyrightText: 2026 Leandro Garcia
+# SPDX-License-Identifier: MIT
+# Baseado na primeira versão de Filipe; alterado por Leandro Garcia.
 """Transcrição local com whisper.cpp. Nenhum áudio vai para serviço de transcrição."""
 import hashlib
 import os

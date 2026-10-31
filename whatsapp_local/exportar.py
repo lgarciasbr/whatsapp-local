@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Leandro Garcia
+# SPDX-License-Identifier: MIT
 """Exporta uma conversa para uma pasta: transcript em Markdown, Anexos/ e Mensagens.json.
 
 O Mensagens.json guarda tudo o que já foi exportado. Cada exportação junta as mensagens

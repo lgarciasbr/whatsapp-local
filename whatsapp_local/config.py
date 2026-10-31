@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Leandro Garcia
+# SPDX-License-Identifier: MIT
 """Configuração: contas de WhatsApp, pasta dos dados e segredos.
 
 Arquivo: ~/.config/whatsapp-local/config.json (ou WA_CONFIG). Exemplo:

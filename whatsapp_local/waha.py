@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Leandro Garcia
+# SPDX-License-Identifier: MIT
 """Fonte waha: a API HTTP de um servidor WAHA (https://waha.devlike.pro), só com GET.
 
 O WAHA é um aparelho vinculado ao WhatsApp rodando num servidor. Ele baixa a mídia

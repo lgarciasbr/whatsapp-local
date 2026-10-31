@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Leandro Garcia
+# SPDX-License-Identifier: MIT
 """Integração com o plugin Obsidian CRM: https://github.com/lgarciasbr/obsidian-crm
 
 Para cada pessoa do CRM (nota com `type: crm/person`, conforme o contrato de dados do

@@ -1,0 +1,7 @@
+# Direitos e licença dos arquivos que não aceitam comentário. Formato: https://reuse.software
+version = 1
+
+[[annotations]]
+path = ["exemplos/**", ".gitignore", "CHANGELOG.md", "LICENSE"]
+SPDX-FileCopyrightText = "2026 Leandro Garcia"
+SPDX-License-Identifier = "MIT"

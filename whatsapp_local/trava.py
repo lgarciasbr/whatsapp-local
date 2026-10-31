@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Leandro Garcia
+# SPDX-License-Identifier: MIT
 """Trava contra duas sincronizações ao mesmo tempo (agendada e manual)."""
 import contextlib
 import os

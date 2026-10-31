@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Filipe
+# SPDX-FileCopyrightText: 2026 Leandro Garcia
+# SPDX-License-Identifier: MIT
+# Baseado na primeira versão de Filipe; alterado por Leandro Garcia.
 """Fonte desktop: o banco do WhatsApp Desktop nativo do macOS.
 
 Só leitura: tira um snapshot do ChatStorage.sqlite e nunca escreve na pasta do

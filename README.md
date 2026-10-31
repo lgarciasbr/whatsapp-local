@@ -1,3 +1,8 @@
+<!--
+SPDX-FileCopyrightText: 2026 Leandro Garcia
+SPDX-License-Identifier: MIT
+-->
+
 # whatsapp-local
 
 Lê conversas do WhatsApp, transcreve áudios e vídeos **nesta máquina** com [whisper.cpp](https://github.com/ggml-org/whisper.cpp) e exporta para Markdown. Serve para resumir conversas, levantar demandas e acompanhar negociações, sozinho ou com um agente de IA (Claude Code, Pi, Codex), sem mandar áudio para serviço de transcrição.
@@ -135,6 +140,13 @@ python3 -m unittest discover -s tests -t .
 
 Os testes usam um WAHA falso, um banco do app do Mac falso e um vault de CRM falso. Nenhum dado real.
 
+## Créditos
+
+- **Filipe**: primeira versão (`whatsapp-desktop-local`): leitura do WhatsApp Desktop do Mac, decifragem da mídia, transcrição local com whisper.cpp e a skill.
+- **Leandro Garcia**: fonte WAHA, contas, sync, exportação, integração com o Obsidian CRM, instalador e testes, e as alterações nos arquivos da primeira versão.
+
+Cada arquivo diz no cabeçalho de quem é (padrão [REUSE](https://reuse.software)/SPDX). Histórico em [CHANGELOG.md](CHANGELOG.md).
+
 ## Licença
 
-A definir.
+[MIT](LICENSE). Copyright (c) 2026 Filipe e Leandro Garcia.

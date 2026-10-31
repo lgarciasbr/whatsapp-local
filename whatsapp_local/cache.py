@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Filipe
+# SPDX-FileCopyrightText: 2026 Leandro Garcia
+# SPDX-License-Identifier: MIT
+# Baseado na primeira versão de Filipe; alterado por Leandro Garcia.
 """Cache de uma conta: mídia baixada, transcrições e mídia que já saiu do servidor.
 
 Tudo indexado pelo id da mensagem no WhatsApp, igual nas duas fontes. É conversa

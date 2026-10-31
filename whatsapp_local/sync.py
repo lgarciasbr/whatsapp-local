@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Leandro Garcia
+# SPDX-License-Identifier: MIT
 """Sincronização: mantém conversas escolhidas exportadas e transcritas numa pasta.
 
 No config.json:

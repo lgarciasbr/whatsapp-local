@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 Leandro Garcia
+# SPDX-License-Identifier: MIT
 """Comando `wa` do whatsapp-local. Funciona direto do clone, sem instalar pacote."""
 import os
 import sys

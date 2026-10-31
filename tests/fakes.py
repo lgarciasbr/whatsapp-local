@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Leandro Garcia
+# SPDX-License-Identifier: MIT
 """Fontes falsas para os testes. Tudo inventado: nenhum dado real."""
 import json
 import os
