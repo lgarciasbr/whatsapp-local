@@ -137,7 +137,7 @@ def _executar(cfg, log):
             base = expandir(item.get("destino") or conf.get("destino") or os.path.join(cfg.pasta_dados, "exportacoes"))
             r = processar(ctx, conta, conv, base, item.get("pasta"), item.get("nome"), dias, log)
             resultados.append(("ok", rotulo, (f"{plural(r['mensagens'], 'mensagem', 'mensagens')} em {r['pasta']}."
-                                              if r else "sem mensagens.")
+                                              if r else "nada para exportar: só eventos (ligações, avisos do WhatsApp).")
                                + aviso_sem_data(r)))
         except (ErroFonte, exportar.ErroExportacao) as e:
             resultados.append(("erro", rotulo, str(e)))

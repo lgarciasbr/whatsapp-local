@@ -159,6 +159,14 @@ class Sync(Caso):
         md = ler(os.path.join(vault, "CRM", "WhatsApp", "People", "Fulana de Tal",
                               "Transcript - Conversa privada com Fulana de Tal.md"))
         self.assertIn("mensagem de meses atrás", md)  # primeira exportação: histórico completo
+        # conversa só com eventos (ligações): não cria pasta e o status diz por quê
+        self.waha.chats.append({"id": "888@lid", "name": "Só ligação", "ts": AGORA - DIA})
+        self.waha.msg("888@lid", "L1", AGORA - DIA, tipo="call_log")
+        self.waha.lids.append({"lid": "888@lid", "pn": "5511955554444@c.us"})
+        vault_crm(vault, "CRM", {"Liga Muito": "11955554444"})
+        r = {rotulo: msg for _, rotulo, msg in sync.executar(cfg, log=lambda *_: None)}
+        self.assertIn("só tem eventos", r["People/Liga Muito"])
+        self.assertFalse(os.path.exists(os.path.join(vault, "CRM", "WhatsApp", "People", "Liga Muito")))
         status = ler(os.path.join(vault, "CRM", "WhatsApp", "Status da sincronização.md"))
         self.assertIn("trabalho (WAHA", status)
         self.assertIn("pessoal (WAHA", status)

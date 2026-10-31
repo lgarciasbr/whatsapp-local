@@ -158,7 +158,9 @@ def numero_de(conv, telefone):
 def _processar(ctx, conta, conv, destino, tipo, pasta, dias, processar, aviso, log, rotulo):
     try:
         r = processar(ctx, conta, conv, os.path.join(destino, tipo), pasta, conv.get("nome") or pasta, dias, log)
-        inicio = f"criado com o histórico completo ({r['mensagens']} mensagens)." if r and r.get("primeira") else "atualizado."
+        if r is None:
+            return ("ok", rotulo, "nada para exportar: a conversa só tem eventos (ligações, avisos do WhatsApp).")
+        inicio = f"criado com o histórico completo ({r['mensagens']} mensagens)." if r.get("primeira") else "atualizado."
         return ("ok", rotulo, inicio + aviso(r))
     except Exception as e:  # uma conversa com problema não para as outras
         return ("erro", rotulo, str(e)[:1000])
