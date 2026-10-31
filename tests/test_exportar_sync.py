@@ -142,6 +142,7 @@ class Sync(Caso):
         pessoal.lids = [{"lid": FULANA, "pn": "554891234567@c.us"}, {"lid": "777@lid", "pn": "14155550100@c.us"}]
         # Beltrano Lima: número antigo no CRM (conversa BELTRANO) e o novo confirmado (444@lid)
         self.waha.lids.append({"lid": BELTRANO, "pn": "5511988880000@c.us"})
+        self.waha.chats[1]["name"] = "+55 11 98888-0000"  # contato não salvo na agenda
         vault = os.path.join(self.tmp, "Vault")
         vault_crm(vault, "CRM", {"Fulana de Tal": "48991234567", "Beltrano Lima": "11988880000",
                                  "Gringo": "+14155550100", "Sem Ninguém": "11977776666"})
@@ -159,6 +160,9 @@ class Sync(Caso):
         md = ler(os.path.join(vault, "CRM", "WhatsApp", "People", "Fulana de Tal",
                               "Transcript - Conversa privada com Fulana de Tal.md"))
         self.assertIn("mensagem de meses atrás", md)  # primeira exportação: histórico completo
+        # contato não salvo (o nome no WhatsApp é o número): o título usa o nome do CRM
+        self.assertTrue(os.path.isfile(os.path.join(vault, "CRM", "WhatsApp", "People", "Beltrano Lima (+55 11 98888-0000)",
+                                                    "Transcript - Conversa privada com Beltrano Lima.md")))
         # conversa só com eventos (ligações): não cria pasta e o status diz por quê
         self.waha.chats.append({"id": "888@lid", "name": "Só ligação", "ts": AGORA - DIA})
         self.waha.msg("888@lid", "L1", AGORA - DIA, tipo="call_log")

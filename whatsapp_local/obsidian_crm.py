@@ -132,7 +132,8 @@ def sincronizar(ctx, estado, conf, dias, resolver, processar, aviso, log=print):
                 resultados.append(("pendente", rotulo, "conversa já associada a outra pessoa; conferir duplicidade."))
                 continue
             usados.add((conta, conv["id"]))
-            resultados.append(_processar(ctx, conta, conv, destino, "People", pasta, dias, processar, aviso, log, rotulo))
+            resultados.append(_processar(ctx, conta, conv, destino, "People", pasta, dias, processar, aviso, log, rotulo,
+                                         titulo=titulo_pessoa(conv, nome)))
 
     for grupo in conf.get("grupos") or []:
         alvo = grupo.get("conversa") or grupo.get("jid")
@@ -150,14 +151,21 @@ def sincronizar(ctx, estado, conf, dias, resolver, processar, aviso, log=print):
     return resultados
 
 
+def titulo_pessoa(conv, nome_crm):
+    """Nome no título do transcript: o do WhatsApp; se o contato não está salvo (o nome é só
+    o número), o do CRM."""
+    nome = (conv.get("nome") or "").strip()
+    return nome if nome and not nome.lstrip("+").replace(" ", "").replace("-", "").isdigit() else nome_crm
+
+
 def numero_de(conv, telefone):
     n = numero(conv["id"])
     return n if conv["id"].endswith(("@c.us", "@s.whatsapp.net")) else telefone or n
 
 
-def _processar(ctx, conta, conv, destino, tipo, pasta, dias, processar, aviso, log, rotulo):
+def _processar(ctx, conta, conv, destino, tipo, pasta, dias, processar, aviso, log, rotulo, titulo=None):
     try:
-        r = processar(ctx, conta, conv, os.path.join(destino, tipo), pasta, conv.get("nome") or pasta, dias, log)
+        r = processar(ctx, conta, conv, os.path.join(destino, tipo), pasta, titulo or conv.get("nome") or pasta, dias, log)
         if r is None:
             return ("ok", rotulo, "nada para exportar: a conversa só tem eventos (ligações, avisos do WhatsApp).")
         inicio = f"criado com o histórico completo ({r['mensagens']} mensagens)." if r.get("primeira") else "atualizado."
