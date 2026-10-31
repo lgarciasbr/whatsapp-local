@@ -129,7 +129,7 @@ def cmd_mensagens(cfg, args):
     if args.json:
         print(json.dumps(operacoes.registros(fonte, conv, msgs, nomes), ensure_ascii=False, indent=1))
         return
-    print(f"# {conv['nome']} ({conv['id']}) · {len(msgs)} mensagens")
+    print(f"# {conv['nome']} ({conv['id']}) · {sync.plural(len(msgs), 'mensagem', 'mensagens')}")
     for m in msgs:
         quando, quem = fmt_data(m["data"], True), autor(m, conv, nomes)
         if m["tipo"] in TEXTO:
@@ -194,8 +194,8 @@ def cmd_exportar(cfg, args):
     if r is None:
         print("Nenhuma mensagem no período; nada foi escrito.")
     else:
-        print(f"{r['pasta']}: {r['mensagens']} mensagens, {r['anexos']} anexos, "
-              f"{r['transcritos']} de {r['audios']} áudios transcritos.")
+        print(f"{r['pasta']}: {sync.plural(r['mensagens'], 'mensagem', 'mensagens')}, "
+              f"{sync.plural(r['anexos'], 'anexo', 'anexos')}, {r['transcritos']} de {r['audios']} áudios transcritos.")
 
 
 def cmd_sync(cfg, args):

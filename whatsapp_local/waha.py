@@ -114,7 +114,8 @@ class FonteWaha:
             # O engine WEBJS às vezes não sabe a data de uma mensagem, e a posição na lista também não
             # serve (pode estar meses fora do lugar). Melhor deixar de fora e avisar do que inventar.
             self.sem_data[chat] = sem_data
-            print(f"[aviso] o WAHA devolveu {len(sem_data)} mensagem(ns) sem data em {chat}; ficaram de fora: "
+            qtd = "1 mensagem" if len(sem_data) == 1 else f"{len(sem_data)} mensagens"
+            print(f"[aviso] o WAHA devolveu {qtd} sem data em {chat}; ficaram de fora: "
                   + ", ".join(sem_data), file=sys.stderr)
         msgs = sorted(msgs.values(), key=lambda m: m["data"])
         if ids:

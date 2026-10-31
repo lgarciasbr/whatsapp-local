@@ -11,7 +11,8 @@ class Ocupado(Exception):
 
 @contextlib.contextmanager
 def trava(caminho):
-    os.makedirs(os.path.dirname(caminho), mode=0o700, exist_ok=True)
+    from .cache import pasta_privada
+    pasta_privada(os.path.dirname(caminho))
     with open(caminho, "a+") as f:
         try:
             import fcntl

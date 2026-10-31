@@ -12,6 +12,13 @@ import os
 from datetime import datetime
 
 
+def pasta_privada(pasta):
+    """Cria a pasta só com permissão do usuário (o makedirs só aplica o modo na última)."""
+    if not os.path.isdir(pasta):
+        os.makedirs(pasta, exist_ok=True)
+        os.chmod(pasta, 0o700)
+
+
 class Cache:
     def __init__(self, pasta):
         self.pasta = pasta
@@ -21,6 +28,7 @@ class Cache:
         self._arquivos = None
 
     def preparar(self, *subpastas):
+        pasta_privada(os.path.dirname(self.pasta))
         os.makedirs(self.pasta, mode=0o700, exist_ok=True)
         for p in subpastas:
             os.makedirs(p, mode=0o700, exist_ok=True)

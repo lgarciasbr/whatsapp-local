@@ -23,6 +23,7 @@ import os
 import time
 
 from . import exportar, obsidian_crm, operacoes
+from .cache import pasta_privada
 from .config import abrir_fonte, expandir
 from .modelo import ErroFonte, resolver_conversa
 from .trava import trava
@@ -63,8 +64,9 @@ class Estado:
                 self.ids = json.load(f).get("ids", {})
 
     def salvar(self):
-        os.makedirs(os.path.dirname(self.arquivo), mode=0o700, exist_ok=True)
-        with open(self.arquivo + ".tmp", "w", encoding="utf-8") as f:
+        pasta_privada(os.path.dirname(self.arquivo))
+        fd = os.open(self.arquivo + ".tmp", os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
             json.dump({"ids": self.ids}, f, ensure_ascii=False, indent=2)
         os.replace(self.arquivo + ".tmp", self.arquivo)
 
@@ -102,9 +104,13 @@ def processar(ctx, conta, conv, base, pasta, nome, dias, log=print):
     return r
 
 
+def plural(n, um, varios):
+    return f"{n} {um if n == 1 else varios}"
+
+
 def aviso_sem_data(r):
     if r and r.get("sem_data"):
-        return (f" {r['sem_data']} mensagem(ns) vieram do WAHA sem data e ficaram de fora "
+        return (f" {plural(r['sem_data'], 'mensagem veio', 'mensagens vieram')} do WAHA sem data e ficaram de fora "
                 "(limitação do engine WEBJS; o app do Mac tem a data).")
     return ""
 
@@ -127,7 +133,8 @@ def _executar(cfg, log):
             conv = resolver(ctx, estado, conta, alvo)
             base = expandir(item.get("destino") or conf.get("destino") or os.path.join(cfg.pasta_dados, "exportacoes"))
             r = processar(ctx, conta, conv, base, item.get("pasta"), item.get("nome"), dias, log)
-            resultados.append(("ok", rotulo, (f"{r['mensagens']} mensagens em {r['pasta']}." if r else "sem mensagens.")
+            resultados.append(("ok", rotulo, (f"{plural(r['mensagens'], 'mensagem', 'mensagens')} em {r['pasta']}."
+                                              if r else "sem mensagens.")
                                + aviso_sem_data(r)))
         except (ErroFonte, exportar.ErroExportacao) as e:
             resultados.append(("erro", rotulo, str(e)))

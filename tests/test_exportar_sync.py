@@ -96,6 +96,9 @@ class Sync(Caso):
                                 "conversas": [{"conversa": "Fulana de Tal"}, {"conversa": "Equipe Projeto"}]})
         r = sync.executar(cfg, log=lambda *_: None)
         self.assertEqual([t for t, _, _ in r], ["ok", "ok"])
+        # dados privados: só o usuário lê
+        self.assertEqual(os.stat(cfg.pasta_dados).st_mode & 0o777, 0o700)
+        self.assertEqual(os.stat(os.path.join(cfg.pasta_dados, "sync-estado.json")).st_mode & 0o777, 0o600)
         self.assertTrue(os.path.isdir(os.path.join(self.tmp, "Notas", "Grupo Equipe Projeto")))
         self.waha.chats[0]["name"] = "Fulana T."  # o nome mudou no WhatsApp: segue pelo id gravado
         r = sync.executar(cfg, log=lambda *_: None)
