@@ -1,7 +1,7 @@
-# SPDX-FileCopyrightText: 2026 Filipe
+# SPDX-FileCopyrightText: 2026 Filipe (Comunidade Ratos de IA)
 # SPDX-FileCopyrightText: 2026 Leandro Garcia
 # SPDX-License-Identifier: MIT
-# Baseado na primeira versão de Filipe; alterado por Leandro Garcia.
+# Baseado na primeira versão de Filipe (Comunidade Ratos de IA); alterado por Leandro Garcia.
 """Operações sobre mensagens, comuns ao comando `wa` e ao sync."""
 import time
 import urllib.error

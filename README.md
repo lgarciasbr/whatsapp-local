@@ -142,11 +142,11 @@ Os testes usam um WAHA falso, um banco do app do Mac falso e um vault de CRM fal
 
 ## Créditos
 
-- **Filipe**: primeira versão (`whatsapp-desktop-local`): leitura do WhatsApp Desktop do Mac, decifragem da mídia, transcrição local com whisper.cpp e a skill.
+- **Filipe, da Comunidade Ratos de IA**: primeira versão (`whatsapp-desktop-local`): leitura do WhatsApp Desktop do Mac, decifragem da mídia, transcrição local com whisper.cpp e a skill.
 - **Leandro Garcia**: fonte WAHA, contas, sync, exportação, integração com o Obsidian CRM, instalador e testes, e as alterações nos arquivos da primeira versão.
 
 Cada arquivo diz no cabeçalho de quem é (padrão [REUSE](https://reuse.software)/SPDX). Histórico em [CHANGELOG.md](CHANGELOG.md).
 
 ## Licença
 
-[MIT](LICENSE). Copyright (c) 2026 Filipe e Leandro Garcia.
+[MIT](LICENSE). Copyright (c) 2026 Filipe (Comunidade Ratos de IA) e Leandro Garcia.

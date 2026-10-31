@@ -2,9 +2,9 @@
 
 ## 0.1.0 - 2026-10-31
 
-Primeira versão publicada, por Leandro Garcia, a partir da primeira versão de Filipe.
+Primeira versão publicada, por Leandro Garcia, a partir da primeira versão de Filipe, da Comunidade Ratos de IA.
 
-Da versão de Filipe (`whatsapp-desktop-local`): leitura do banco do WhatsApp Desktop do Mac, download e decifragem da mídia que o app não baixou, transcrição local com whisper.cpp e as regras de uso da skill.
+Da versão de Filipe, da Comunidade Ratos de IA (`whatsapp-desktop-local`): leitura do banco do WhatsApp Desktop do Mac, download e decifragem da mídia que o app não baixou, transcrição local com whisper.cpp e as regras de uso da skill.
 
 Novo nesta versão:
 - Fonte WAHA, além do app do Mac, e contas nomeadas (mais de um número).
