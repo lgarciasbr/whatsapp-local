@@ -3,9 +3,14 @@
 """Integração com o plugin Obsidian CRM: https://github.com/lgarciasbr/obsidian-crm
 
 Para cada pessoa do CRM (nota com `type: crm/person`, conforme o contrato de dados do
-plugin), acha a conversa pelo `phone` e exporta para <pasta do CRM>/WhatsApp/People/<nome>/.
-Grupos escolhidos vão para <pasta do CRM>/WhatsApp/Group/<nome>/. A pasta do CRM vem das
-configurações do plugin (`crmRoot`).
+plugin), procura a conversa pelo `phone` em cada conta configurada e exporta para
+<pasta do CRM>/WhatsApp/People/<nome>/. Grupos escolhidos vão para Group/<nome>/. A pasta
+do CRM vem das configurações do plugin (`crmRoot`).
+
+Telefone sem "+" e com 10 ou 11 dígitos ganha o país padrão (55). Uma conversa por pasta:
+na primeira conta, a pasta é <nome>; nas outras, <nome> (<conta>). Se a mesma conta tiver
+outra conversa da pessoa (um número antigo confirmado e o do CRM, por exemplo), a extra
+leva o número: <nome> (+55 11 91234-5678).
 
 Só lê as notas do CRM: escreve apenas dentro de <pasta do CRM>/WhatsApp/.
 
@@ -13,13 +18,15 @@ No config.json, dentro de "sync":
 
     "obsidian_crm": {
       "vault": "~/Obsidian/Meu Vault",
-      "conta": "trabalho",                     opcional; senão, a conta padrão
+      "contas": ["trabalho", "pessoal"],       onde procurar, a primeira é a principal (padrão: a conta padrão)
+      "ddi_padrao": "55",                      país de telefones sem "+" (padrão: 55)
       "pasta_crm": "CRM",                      opcional; senão, a do plugin
       "pessoas": {"Maria Silva": "5511999999999@c.us"},   confirmações quando o telefone não basta
       "grupos": [{"conversa": "Equipe Projeto X", "nome": "Projeto X"}]
     }
 
-Uma pessoa só é associada por telefone quando ele leva a uma única conversa. Nunca por nome.
+Numa conta, uma pessoa só é associada por telefone quando ele leva a uma única conversa.
+Nunca por nome.
 """
 import datetime
 import json
@@ -27,7 +34,7 @@ import os
 import re
 
 from .config import expandir
-from .modelo import ErroFonte, numero, variantes_telefone
+from .modelo import ErroFonte, formatar_telefone, normalizar_telefone, numero, variantes_telefone
 
 PLUGIN = "https://github.com/lgarciasbr/obsidian-crm"
 
@@ -54,7 +61,7 @@ def campo(texto, chave):
     return m.group(1).strip().strip("\"'") if m else ""
 
 
-def pessoas(crm):
+def pessoas(crm, ddi="55"):
     pasta = os.path.join(crm, "People")
     if not os.path.isdir(pasta):
         raise ErroFonte(f"Pasta People/ do CRM não encontrada em {crm}. O vault está sincronizado? ({PLUGIN})")
@@ -63,7 +70,7 @@ def pessoas(crm):
             with open(os.path.join(pasta, nome), encoding="utf-8") as f:
                 texto = f.read()
             if campo(texto, "type") == "crm/person":
-                yield nome[:-3], re.sub(r"\D", "", campo(texto, "phone"))
+                yield nome[:-3], normalizar_telefone(campo(texto, "phone"), ddi)
 
 
 def conversa_da_pessoa(convs, indice, telefone):
@@ -75,41 +82,61 @@ def conversa_da_pessoa(convs, indice, telefone):
     return [c for c in convs if not c["grupo"] and (c["id"] in jids or numero(c["id"]) in variantes)]
 
 
+def contas_crm(ctx, conf):
+    contas = conf.get("contas") or [conf.get("conta") or ctx.cfg.conta_padrao]
+    return [c for c in contas if c]
+
+
 def sincronizar(ctx, estado, conf, dias, resolver, processar, aviso, log=print):
-    conta = conf.get("conta")
+    contas = contas_crm(ctx, conf)
     crm = pasta_crm(conf)
     destino = os.path.join(crm, "WhatsApp")
-    fonte = ctx.fonte(conta)
-    convs = ctx.conversas(conta)
-    indice = fonte.indice_telefones()
+    dados = {}
+    for conta in contas:
+        try:
+            dados[conta] = (ctx.conversas(conta), ctx.fonte(conta).indice_telefones())
+        except ErroFonte as e:
+            log(f"[aviso] conta {conta} indisponível: {e}")
     confirmadas = conf.get("pessoas") or {}
     resultados, usados = [], set()
 
-    for nome, telefone in pessoas(crm):
+    for nome, telefone in pessoas(crm, conf.get("ddi_padrao", "55")):
         vinculo = confirmadas.get(nome)
         if isinstance(vinculo, dict):  # formato antigo: {"jid": ..., "nome_whatsapp": ...}
             vinculo = vinculo.get("jid")
-        rotulo = f"People/{nome}"
-        if vinculo:
-            conv = next((c for c in convs if c["id"] == vinculo), None) or \
-                {"id": vinculo, "nome": nome, "grupo": False, "ultima": None}
-        else:
-            achou = conversa_da_pessoa(convs, indice, telefone)
-            if len(achou) != 1:
-                motivo = ("telefone não preenchido no CRM" if not telefone else
-                          "mais de uma conversa associada ao telefone" if achou else
-                          "nenhuma conversa associada ao telefone do CRM")
-                resultados.append(("pendente", rotulo, motivo + ". Nenhuma associação por nome foi feita."))
+        achadas, avisos = [], []
+        for conta in contas:
+            if conta not in dados:
                 continue
-            conv = achou[0]
-        if conv["id"] in usados:
-            resultados.append(("pendente", rotulo, "conversa já associada a outra pessoa; conferir duplicidade."))
+            convs, indice = dados[conta]
+            na_conta = []
+            if vinculo:
+                na_conta += [c for c in convs if c["id"] == vinculo]
+            if telefone:
+                por_tel = conversa_da_pessoa(convs, indice, telefone)
+                if len(por_tel) > 1:
+                    avisos.append(f"mais de uma conversa associada ao telefone na conta {conta}")
+                else:
+                    na_conta += [c for c in por_tel if c["id"] not in {x["id"] for x in na_conta}]
+            for i, conv in enumerate(na_conta):
+                partes = ([] if conta == contas[0] else [conta]) + ([] if i == 0 else [formatar_telefone(numero_de(conv, telefone))])
+                achadas.append((conta, conv, nome + (f" ({', '.join(partes)})" if partes else "")))
+        if not achadas:
+            motivo = ("; ".join(avisos) if avisos else "telefone não preenchido no CRM" if not telefone
+                      else f"nenhuma conversa com o telefone do CRM em {', '.join(contas)}")
+            resultados.append(("pendente", f"People/{nome}", motivo + ". Nenhuma associação por nome foi feita."))
             continue
-        usados.add(conv["id"])
-        resultados.append(_processar(ctx, conta, conv, destino, "People", nome, dias, processar, aviso, log, rotulo))
+        for conta, conv, pasta in achadas:
+            rotulo = f"People/{pasta}"
+            if (conta, conv["id"]) in usados:
+                resultados.append(("pendente", rotulo, "conversa já associada a outra pessoa; conferir duplicidade."))
+                continue
+            usados.add((conta, conv["id"]))
+            resultados.append(_processar(ctx, conta, conv, destino, "People", pasta, dias, processar, aviso, log, rotulo))
 
     for grupo in conf.get("grupos") or []:
         alvo = grupo.get("conversa") or grupo.get("jid")
+        conta = grupo.get("conta") or contas[0]
         nome = grupo.get("nome") or alvo
         rotulo = f"Group/{nome}"
         try:
@@ -119,26 +146,40 @@ def sincronizar(ctx, estado, conf, dias, resolver, processar, aviso, log=print):
             continue
         resultados.append(_processar(ctx, conta, conv, destino, "Group", nome, dias, processar, aviso, log, rotulo))
 
-    _nota_status(destino, ctx.fonte(conta), resultados)
+    _nota_status(destino, contas, ctx, resultados)
     return resultados
+
+
+def numero_de(conv, telefone):
+    n = numero(conv["id"])
+    return n if conv["id"].endswith(("@c.us", "@s.whatsapp.net")) else telefone or n
 
 
 def _processar(ctx, conta, conv, destino, tipo, pasta, dias, processar, aviso, log, rotulo):
     try:
         r = processar(ctx, conta, conv, os.path.join(destino, tipo), pasta, conv.get("nome") or pasta, dias, log)
-        return ("ok", rotulo, "atualizado." + aviso(r))
+        inicio = f"criado com o histórico completo ({r['mensagens']} mensagens)." if r and r.get("primeira") else "atualizado."
+        return ("ok", rotulo, inicio + aviso(r))
     except Exception as e:  # uma conversa com problema não para as outras
         return ("erro", rotulo, str(e)[:1000])
 
 
-def _nota_status(destino, fonte, resultados):
+def _nota_status(destino, contas, ctx, resultados):
     os.makedirs(destino, exist_ok=True)
-    origem = (f"WAHA (sessão {fonte.sessao})" if fonte.tipo == "waha" else "WhatsApp Desktop do Mac")
+    origens = []
+    for conta in contas:
+        try:
+            fonte = ctx.fonte(conta)
+        except ErroFonte:
+            origens.append(f"{conta} (indisponível)")
+            continue
+        origens.append(f"{conta} (WAHA, sessão {fonte.sessao})" if fonte.tipo == "waha" else f"{conta} (WhatsApp Desktop do Mac)")
+    origem = ", ".join(origens)
     rotulos = {"ok": "OK", "erro": "Erro", "pendente": "Pendente"}
     ordem = {"pendente": 0, "erro": 1, "ok": 2}
     linhas = [f"- {rotulos[t]} · {r}: {m}" for t, r, m in sorted(resultados, key=lambda x: (ordem[x[0]], x[1]))]
     conteudo = (f"# Status da sincronização do WhatsApp\n\nÚltima execução: "
-                f"{datetime.datetime.now():%d/%m/%Y %H:%M:%S}\n\nFonte: {origem}. Transcrição local (whisper.cpp). "
+                f"{datetime.datetime.now():%d/%m/%Y %H:%M:%S}\n\nContas: {origem}. Transcrição local (whisper.cpp). "
                 f"Gerado por whatsapp-local para o Obsidian CRM ({PLUGIN}).\n\n" + "\n".join(linhas) + "\n")
     nota = os.path.join(destino, "Status da sincronização.md")
     with open(nota + ".tmp", "w", encoding="utf-8") as f:

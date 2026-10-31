@@ -17,7 +17,7 @@
     ],
     "obsidian_crm": {
       "vault": "~/Obsidian/Meu Vault",
-      "conta": "trabalho",
+      "contas": ["trabalho", "pessoal"],
       "pessoas": {"Maria Silva": "5511999999999@c.us"},
       "grupos": [{"conversa": "Equipe Projeto X", "nome": "Projeto X"}]
     }

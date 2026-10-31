@@ -80,12 +80,27 @@ def variantes_telefone(digitos):
     return v
 
 
-def resolver_conversa(convs, alvo):
+def normalizar_telefone(texto, ddi="55"):
+    """Só dígitos, com o código do país. Sem "+" e com 10 ou 11 dígitos (DDD + número), vale o
+    país padrão; com "+" o país já está explícito e o número fica como está."""
+    digitos = "".join(c for c in (texto or "") if c.isdigit())
+    if digitos and not (texto or "").strip().startswith("+") and len(digitos) in (10, 11):
+        return (ddi or "") + digitos
+    return digitos
+
+
+def formatar_telefone(digitos):
+    if len(digitos) in (12, 13) and digitos.startswith("55"):
+        return f"+55 {digitos[2:4]} {digitos[4:-4]}-{digitos[-4:]}"
+    return "+" + digitos if digitos else ""
+
+
+def resolver_conversa(convs, alvo, ddi="55"):
     """Acha uma conversa por id, número ou nome. Nome só vale se for inequívoco."""
     if "@" in alvo:
         achou = [c for c in convs if c["id"] == alvo]
     elif alvo.lstrip("+").isdigit():
-        dig = variantes_telefone(alvo.lstrip("+"))
+        dig = variantes_telefone(normalizar_telefone(alvo, ddi)) | {alvo.lstrip("+")}
         achou = [c for c in convs if not c["grupo"] and numero(c["id"]) in dig]
         if not achou:  # número parcial
             achou = [c for c in convs if any(d in c["id"] for d in dig)]

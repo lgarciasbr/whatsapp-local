@@ -100,7 +100,7 @@ A exportação cria uma pasta por conversa com o transcript em Markdown, `Anexos
 }
 ```
 
-`wa sync` baixa (pelo WAHA), transcreve e exporta os últimos `dias` de cada conversa. Na primeira vez, o nome é resolvido e o id da conversa fica gravado em `<dados>/sync-estado.json`; depois, o sync segue pelo id mesmo que o nome mude. Uma conversa com problema não para as outras.
+`wa sync` baixa (pelo WAHA), transcreve e exporta cada conversa: o histórico inteiro na primeira vez, depois os últimos `dias`. Na primeira vez, o nome é resolvido e o id da conversa fica gravado em `<dados>/sync-estado.json`; depois, o sync segue pelo id mesmo que o nome mude. Uma conversa com problema não para as outras.
 
 Para rodar periodicamente: `wa agendar` mostra o agendamento; `wa agendar --instalar` instala (launchd no macOS, timer do systemd ou cron no Linux), a cada 30 minutos por padrão.
 
@@ -112,18 +112,19 @@ Para quem usa o plugin [Obsidian CRM](https://github.com/lgarciasbr/obsidian-crm
 "sync": {
   "obsidian_crm": {
     "vault": "~/Obsidian/Meu Vault",
-    "conta": "trabalho",
+    "contas": ["trabalho", "pessoal"],
     "pessoas": {"Maria Silva": "5511999999999@c.us"},
     "grupos": [{"conversa": "Equipe Projeto X", "nome": "Projeto X"}]
   }
 }
 ```
 
-Para cada pessoa do CRM (nota `type: crm/person`), o sync acha a conversa pelo `phone` e exporta para `<pasta do CRM>/WhatsApp/People/<nome>/`. Os grupos listados vão para `Group/<nome>/`. A pasta do CRM vem das configurações do plugin. O resultado fica em `<pasta do CRM>/WhatsApp/Status da sincronização.md`.
+Para cada pessoa do CRM (nota `type: crm/person`), o sync procura a conversa pelo `phone` em cada conta de `contas` e exporta para `<pasta do CRM>/WhatsApp/People/`. Os grupos listados vão para `Group/<nome>/`. A pasta do CRM vem das configurações do plugin. O resultado fica em `<pasta do CRM>/WhatsApp/Status da sincronização.md`.
 
-- Uma pessoa só é associada quando o telefone leva a uma única conversa. Nunca por nome.
-- Celulares brasileiros com e sem o nono dígito são tratados como o mesmo número.
-- `pessoas` confirma a conversa quando o telefone não basta.
+- **Uma pasta por conversa.** Na primeira conta de `contas`, a pasta é `<nome>`; nas outras, `<nome> (<conta>)`. Se a mesma conta tiver outra conversa da pessoa (um número antigo, por exemplo), a extra leva o número: `<nome> (+55 11 91234-5678)`.
+- **Telefone.** Sem `+` e com 10 ou 11 dígitos, vale o país padrão (`ddi_padrao`, 55). Com `+`, o país já está explícito. Celulares brasileiros com e sem o nono dígito são o mesmo número.
+- Numa conta, a pessoa só é associada quando o telefone leva a uma única conversa. Nunca por nome. Quem não tem telefone no CRM fica pendente, a menos que esteja em `pessoas`.
+- Na primeira exportação de cada conversa vem o histórico inteiro; depois, só os últimos `dias`.
 - As notas do CRM só são lidas; o sync escreve apenas dentro de `WhatsApp/`.
 
 ## O que saber

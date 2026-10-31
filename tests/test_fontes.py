@@ -6,7 +6,8 @@ import unittest
 from tests.base import AGORA, DIA, Caso
 from tests.fakes import criar_app_mac
 from whatsapp_local.config import abrir_fonte
-from whatsapp_local.modelo import Ambigua, ErroFonte, MidiaIndisponivel, resolver_conversa, variantes_telefone
+from whatsapp_local.modelo import (Ambigua, ErroFonte, MidiaIndisponivel, normalizar_telefone, resolver_conversa,
+                                   variantes_telefone)
 
 FULANA = "111111111111111@lid"
 GRUPO = "120363000000000001@g.us"
@@ -17,6 +18,15 @@ class Telefones(unittest.TestCase):
         self.assertEqual(variantes_telefone("5548991234567"), {"5548991234567", "554891234567"})
         self.assertEqual(variantes_telefone("554891234567"), {"554891234567", "5548991234567"})
         self.assertEqual(variantes_telefone("14155550100"), {"14155550100"})
+
+
+    def test_pais_padrao_so_quando_nao_explicito(self):
+        self.assertEqual(normalizar_telefone("19991537534"), "5519991537534")      # DDD + celular
+        self.assertEqual(normalizar_telefone("(11) 5555-0100"), "551155550100")    # DDD + fixo
+        self.assertEqual(normalizar_telefone("+5548991234567"), "5548991234567")   # já tem o país
+        self.assertEqual(normalizar_telefone("+14155550100"), "14155550100")       # outro país, explícito
+        self.assertEqual(normalizar_telefone("2025550100", ddi="1"), "12025550100")
+        self.assertEqual(normalizar_telefone(""), "")
 
 
 class Resolver(unittest.TestCase):
@@ -34,6 +44,9 @@ class Resolver(unittest.TestCase):
 
     def test_numero_com_nono_digito(self):
         self.assertEqual(resolver_conversa(self.convs, "+5548991234567")["nome"], "Beltrano")
+
+    def test_numero_sem_codigo_do_pais(self):
+        self.assertEqual(resolver_conversa(self.convs, "48991234567")["nome"], "Beltrano")
 
     def test_nao_achou(self):
         with self.assertRaises(ErroFonte):

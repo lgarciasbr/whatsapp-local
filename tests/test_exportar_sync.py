@@ -128,6 +128,41 @@ class Sync(Caso):
         self.assertIn("obsidian-crm", ler(os.path.join(wa, "Status da sincronização.md")))
         self.assertEqual(antes, hashes(os.path.join(vault, "14 - CRM", "People")))  # só lê as notas do CRM
 
+    def test_obsidian_crm_em_duas_contas(self):
+        from tests.fakes import CHAVE, WahaFalso
+        pessoal = WahaFalso()
+        self.addCleanup(pessoal.parar)
+        os.environ["WAHA_API_KEY_PESSOAL"] = CHAVE
+        self.addCleanup(os.environ.pop, "WAHA_API_KEY_PESSOAL")
+        # FULANA está nas duas contas; no trabalho, a conversa mais antiga passa da janela do sync
+        self.waha.msg(FULANA, "ANTIGA", AGORA - 200 * DIA, corpo="mensagem de meses atrás")
+        pessoal.chats = [{"id": FULANA, "name": "Fulana", "ts": AGORA - DIA}, {"id": "777@lid", "name": "Gringo", "ts": AGORA - DIA}]
+        pessoal.msg(FULANA, "P1", AGORA - DIA, corpo="oi pelo pessoal")
+        pessoal.msg("777@lid", "P2", AGORA - DIA, corpo="hello")
+        pessoal.lids = [{"lid": FULANA, "pn": "554891234567@c.us"}, {"lid": "777@lid", "pn": "14155550100@c.us"}]
+        # Beltrano Lima: número antigo no CRM (conversa BELTRANO) e o novo confirmado (444@lid)
+        self.waha.lids.append({"lid": BELTRANO, "pn": "5511988880000@c.us"})
+        vault = os.path.join(self.tmp, "Vault")
+        vault_crm(vault, "CRM", {"Fulana de Tal": "48991234567", "Beltrano Lima": "11988880000",
+                                 "Gringo": "+14155550100", "Sem Ninguém": "11977776666"})
+        contas = {"trabalho": {"fonte": "waha", "url": self.waha.url, "sessao": "default"},
+                  "pessoal": {"fonte": "waha", "url": pessoal.url, "sessao": "pessoal"}}
+        cfg = self.config(contas=contas, sync={"dias": 30, "obsidian_crm": {
+            "vault": vault, "contas": ["trabalho", "pessoal"], "pessoas": {"Beltrano Lima": "444@lid"}}})
+        r = {rotulo: tipo for tipo, rotulo, _ in sync.executar(cfg, log=lambda *_: None)}
+        self.assertEqual(r, {"People/Fulana de Tal": "ok",                     # sem 55 no CRM
+                             "People/Fulana de Tal (pessoal)": "ok",           # mesma pessoa na outra conta
+                             "People/Beltrano Lima": "ok",                     # confirmada
+                             "People/Beltrano Lima (+55 11 98888-0000)": "ok", # número antigo, do CRM
+                             "People/Gringo (pessoal)": "ok",                  # +1 explícito: sem 55
+                             "People/Sem Ninguém": "pendente"})
+        md = ler(os.path.join(vault, "CRM", "WhatsApp", "People", "Fulana de Tal",
+                              "Transcript - Conversa privada com Fulana de Tal.md"))
+        self.assertIn("mensagem de meses atrás", md)  # primeira exportação: histórico completo
+        status = ler(os.path.join(vault, "CRM", "WhatsApp", "Status da sincronização.md"))
+        self.assertIn("trabalho (WAHA", status)
+        self.assertIn("pessoal (WAHA", status)
+
     def test_trava(self):
         cfg = self.config()
         with trava(os.path.join(cfg.pasta_dados, "sync.lock")):

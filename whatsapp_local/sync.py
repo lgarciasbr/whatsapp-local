@@ -87,20 +87,22 @@ def resolver(ctx, estado, conta, alvo):
 
 
 def processar(ctx, conta, conv, base, pasta, nome, dias, log=print):
-    """Baixa (WAHA), transcreve e exporta uma conversa. Devolve o resumo da exportação."""
+    """Baixa (WAHA), transcreve e exporta uma conversa. Na primeira exportação (pasta sem
+    Mensagens.json), lê o histórico inteiro; depois, só a janela de `dias`."""
     cfg = ctx.cfg
     fonte = ctx.fonte(conta)
-    ini = time.time() - dias * 86400
-    msgs = fonte.mensagens(conv["id"], ini)
+    nome = nome or conv["nome"] or conv["id"].split("@")[0]
+    pasta = pasta or exportar.pasta_padrao(nome, conv["grupo"])
+    primeira = not os.path.exists(os.path.join(base, exportar.limpa_nome(pasta), "Mensagens.json"))
+    msgs = fonte.mensagens(conv["id"], None if primeira else time.time() - dias * 86400)
     if fonte.tipo == "waha" or cfg.sync.get("baixar_midia_desktop"):
         operacoes.baixar(fonte, operacoes.com_midia(msgs), log=lambda *_: None)
     operacoes.transcrever(fonte, msgs, cfg.whisper, log=lambda *_: None)
     regs = operacoes.registros(fonte, conv, msgs, ctx.nomes(conta))
-    nome = nome or conv["nome"] or conv["id"].split("@")[0]
-    r = exportar.exportar(regs, conv["id"], base, pasta or exportar.pasta_padrao(nome, conv["grupo"]),
-                          exportar.titulo_padrao(nome, conv["grupo"]))
+    r = exportar.exportar(regs, conv["id"], base, pasta, exportar.titulo_padrao(nome, conv["grupo"]))
     if r is not None:
         r["sem_data"] = len(getattr(fonte, "sem_data", {}).get(conv["id"], []))
+        r["primeira"] = primeira
     return r
 
 
