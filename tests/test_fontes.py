@@ -68,6 +68,12 @@ class Waha(Caso):
         # sem data nenhuma: fica de fora, mas registrado para o sync avisar
         self.assertEqual(fonte.sem_data[FULANA], ["false_" + FULANA + "_3A05"])
 
+    def test_periodo_nao_para_em_mensagem_sem_data(self):
+        fonte = self.preparar()
+        # 3A03 vem sem timestamp: o filtro do WAHA pararia ali e perderia 3A01 e 3A02
+        self.assertEqual([m["id"] for m in fonte.mensagens(FULANA, AGORA - 10 * DIA)], ["3A01", "3A02", "3A03", "3A04"])
+        self.assertTrue(all("filter.timestamp" not in p for p in self.waha.pedidos))
+
     def test_nome_do_participante_pelo_telefone(self):
         fonte = self.preparar()
         self.assertEqual(fonte.nomes()["222@lid"], "Carla Lima")

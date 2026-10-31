@@ -88,19 +88,7 @@ class FonteWaha:
         return sorted(convs, key=lambda c: c["ultima"], reverse=True)
 
     def mensagens(self, chat, ini=None, fim=None, ids=None):
-        # No WEBJS cada página recarrega a conversa desde o início: poucas páginas grandes.
-        params = {"limit": 5000, "downloadMedia": "false"}
-        if ini is not None:
-            params["filter.timestamp.gte"] = int(ini)
-        if fim is not None:
-            params["filter.timestamp.lte"] = int(fim) - 1
-        brutas, offset = [], 0
-        while True:  # o WAHA devolve da mais nova pra mais antiga
-            pagina = self.get(self._chat(chat) + "/messages", offset=offset, **params)
-            brutas += pagina
-            if len(pagina) < params["limit"]:
-                break
-            offset += params["limit"]
+        brutas = self._recentes(chat, ini)
         msgs, sem_data = {}, []
         for x in brutas:
             m = mensagem(x, chat)
@@ -121,6 +109,20 @@ class FonteWaha:
         if ids:
             msgs = [m for m in msgs if m["id"] in set(ids)]
         return msgs
+
+    def _recentes(self, chat, ini):
+        """Mensagens da conversa até cobrir o período. O filtro de data do WAHA (WEBJS) para na
+        primeira mensagem sem data e pula as anteriores, então a data é filtrada aqui. Cada página
+        com offset recarrega a conversa desde o início; por isso o lote cresce em vez de paginar."""
+        limite = 200
+        while True:
+            brutas = self.get(self._chat(chat) + "/messages", limit=limite, downloadMedia="false")
+            if len(brutas) < limite or limite >= 100000:
+                return brutas
+            datas = [data_de(x) for x in brutas]
+            if ini is not None and min((d for d in datas if d), default=ini) < ini:
+                return brutas  # já passou do início do período
+            limite *= 5
 
     def lids(self):
         """Pares {lid, pn} que o WAHA conhece (pn = telefone@c.us)."""
@@ -171,6 +173,13 @@ class FonteWaha:
         return destino
 
 
+def data_de(x):
+    """Timestamp da mensagem. Algumas mídias vêm sem data do WEBJS; aí vale a da chave da mídia,
+    gerada ~1 min antes do envio. Algumas mensagens não têm data nenhuma (None)."""
+    d = x.get("_data") or {}
+    return x.get("timestamp") or d.get("t") or d.get("mediaKeyTimestamp")
+
+
 def mensagem(x, chat):
     d = x.get("_data") or {}
     tipo = TIPO_WAHA.get(d.get("type"), 10)
@@ -192,12 +201,10 @@ def mensagem(x, chat):
         duracao = int(float(d.get("duration") or 0)) or None
     except ValueError:
         duracao = None
-    # Algumas mídias vêm sem timestamp do WEBJS; a chave da mídia é gerada ~1 min antes do envio.
-    ts = x.get("timestamp") or d.get("t")
-    aproximada = not ts
-    ts = ts or d.get("mediaKeyTimestamp")
+    ts = data_de(x)
     if not ts:
         return None
+    aproximada = not (x.get("timestamp") or d.get("t"))
     mime = ((x.get("media") or {}).get("mimetype") or d.get("mimetype") or "").split(";")[0]
     return {"id": wid, "chat": chat, "tipo": tipo, "eu": bool(x.get("fromMe")), "data": ts,
             "texto": texto, "legenda": legenda, "duracao": duracao, "tamanho": d.get("size"), "mime": mime,

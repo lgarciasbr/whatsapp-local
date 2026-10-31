@@ -110,8 +110,9 @@ def plural(n, um, varios):
 
 def aviso_sem_data(r):
     if r and r.get("sem_data"):
-        return (f" {plural(r['sem_data'], 'mensagem veio', 'mensagens vieram')} do WAHA sem data e ficaram de fora "
-                "(limitação do engine WEBJS; o app do Mac tem a data).")
+        n = r["sem_data"]
+        return (f" {n} {'mensagem veio' if n == 1 else 'mensagens vieram'} do WAHA sem data e "
+                f"{'ficou' if n == 1 else 'ficaram'} de fora (limitação do engine WEBJS; o app do Mac tem a data).")
     return ""
 
 
