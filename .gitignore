@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+.DS_Store
+# Nunca versionar dados de conversa, configuração pessoal ou segredos.
+config.json
+segredos.env
+*.sqlite
+*.sqlite-*

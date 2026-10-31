@@ -1,0 +1,25 @@
+{
+  "dados": "~/.local/share/whatsapp-local",
+  "conta_padrao": "trabalho",
+  "contas": {
+    "trabalho": {"fonte": "waha", "url": "https://waha.exemplo.com", "sessao": "default"},
+    "pessoal": {"fonte": "waha", "url": "https://waha.exemplo.com", "sessao": "pessoal"},
+    "mac": {"fonte": "desktop", "dados": "~/.local/share/whatsapp-local/trabalho"}
+  },
+  "whisper": {"idioma": "pt"},
+  "sync": {
+    "dias": 30,
+    "destino": "~/Notas/WhatsApp",
+    "conversas": [
+      {"conversa": "Maria Silva"},
+      {"conversa": "+5511999999999", "conta": "pessoal"},
+      {"conversa": "Equipe Projeto X", "destino": "~/Notas/Projeto X"}
+    ],
+    "obsidian_crm": {
+      "vault": "~/Obsidian/Meu Vault",
+      "conta": "trabalho",
+      "pessoas": {"Maria Silva": "5511999999999@c.us"},
+      "grupos": [{"conversa": "Equipe Projeto X", "nome": "Projeto X"}]
+    }
+  }
+}
