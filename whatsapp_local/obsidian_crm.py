@@ -73,7 +73,7 @@ def conversa_da_pessoa(convs, indice, telefone):
     return [c for c in convs if not c["grupo"] and (c["id"] in jids or numero(c["id"]) in variantes)]
 
 
-def sincronizar(ctx, estado, conf, dias, resolver, processar, log=print):
+def sincronizar(ctx, estado, conf, dias, resolver, processar, aviso, log=print):
     conta = conf.get("conta")
     crm = pasta_crm(conf)
     destino = os.path.join(crm, "WhatsApp")
@@ -104,7 +104,7 @@ def sincronizar(ctx, estado, conf, dias, resolver, processar, log=print):
             resultados.append(("pendente", rotulo, "conversa já associada a outra pessoa; conferir duplicidade."))
             continue
         usados.add(conv["id"])
-        resultados.append(_processar(ctx, conta, conv, destino, "People", nome, dias, processar, log, rotulo))
+        resultados.append(_processar(ctx, conta, conv, destino, "People", nome, dias, processar, aviso, log, rotulo))
 
     for grupo in conf.get("grupos") or []:
         alvo = grupo.get("conversa") or grupo.get("jid")
@@ -115,16 +115,16 @@ def sincronizar(ctx, estado, conf, dias, resolver, processar, log=print):
         except ErroFonte as e:
             resultados.append(("erro", rotulo, str(e)))
             continue
-        resultados.append(_processar(ctx, conta, conv, destino, "Group", nome, dias, processar, log, rotulo))
+        resultados.append(_processar(ctx, conta, conv, destino, "Group", nome, dias, processar, aviso, log, rotulo))
 
     _nota_status(destino, ctx.fonte(conta), resultados)
     return resultados
 
 
-def _processar(ctx, conta, conv, destino, tipo, pasta, dias, processar, log, rotulo):
+def _processar(ctx, conta, conv, destino, tipo, pasta, dias, processar, aviso, log, rotulo):
     try:
-        processar(ctx, conta, conv, os.path.join(destino, tipo), pasta, conv.get("nome") or pasta, dias, log)
-        return ("ok", rotulo, "atualizado.")
+        r = processar(ctx, conta, conv, os.path.join(destino, tipo), pasta, conv.get("nome") or pasta, dias, log)
+        return ("ok", rotulo, "atualizado." + aviso(r))
     except Exception as e:  # uma conversa com problema não para as outras
         return ("erro", rotulo, str(e)[:1000])
 

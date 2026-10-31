@@ -93,8 +93,18 @@ def processar(ctx, conta, conv, base, pasta, nome, dias, log=print):
     operacoes.transcrever(fonte, msgs, cfg.whisper, log=lambda *_: None)
     regs = operacoes.registros(fonte, conv, msgs, ctx.nomes(conta))
     nome = nome or conv["nome"] or conv["id"].split("@")[0]
-    return exportar.exportar(regs, conv["id"], base, pasta or exportar.pasta_padrao(nome, conv["grupo"]),
-                             exportar.titulo_padrao(nome, conv["grupo"]))
+    r = exportar.exportar(regs, conv["id"], base, pasta or exportar.pasta_padrao(nome, conv["grupo"]),
+                          exportar.titulo_padrao(nome, conv["grupo"]))
+    if r is not None:
+        r["sem_data"] = len(getattr(fonte, "sem_data", {}).get(conv["id"], []))
+    return r
+
+
+def aviso_sem_data(r):
+    if r and r.get("sem_data"):
+        return (f" {r['sem_data']} mensagem(ns) vieram do WAHA sem data e ficaram de fora "
+                "(limitação do engine WEBJS; o app do Mac tem a data).")
+    return ""
 
 
 def executar(cfg, log=print):
@@ -115,7 +125,8 @@ def _executar(cfg, log):
             conv = resolver(ctx, estado, conta, alvo)
             base = expandir(item.get("destino") or conf.get("destino") or os.path.join(cfg.pasta_dados, "exportacoes"))
             r = processar(ctx, conta, conv, base, item.get("pasta"), item.get("nome"), dias, log)
-            resultados.append(("ok", rotulo, f"{r['mensagens']} mensagens em {r['pasta']}" if r else "sem mensagens"))
+            resultados.append(("ok", rotulo, (f"{r['mensagens']} mensagens em {r['pasta']}." if r else "sem mensagens.")
+                               + aviso_sem_data(r)))
         except (ErroFonte, exportar.ErroExportacao) as e:
             resultados.append(("erro", rotulo, str(e)))
         except Exception as e:  # uma conversa com problema não para as outras
@@ -123,7 +134,8 @@ def _executar(cfg, log):
 
     if conf.get("obsidian_crm"):
         try:
-            resultados += obsidian_crm.sincronizar(ctx, estado, conf["obsidian_crm"], dias, resolver, processar, log)
+            resultados += obsidian_crm.sincronizar(ctx, estado, conf["obsidian_crm"], dias, resolver, processar,
+                                                   aviso_sem_data, log)
         except ErroFonte as e:
             resultados.append(("erro", "Obsidian CRM", str(e)))
 

@@ -65,7 +65,9 @@ class WahaFalso:
         if p[2] == "chats" and p[4] == "messages" and len(p) == 5:
             msgs = sorted(self.mensagens.get(p[3], []), key=lambda m: -(m.get("timestamp") or 0))
             if "filter.timestamp.gte" in q:
-                msgs = [m for m in msgs if (m.get("timestamp") or m["_data"].get("mediaKeyTimestamp")) >= int(q["filter.timestamp.gte"])]
+                # como o WAHA real: mensagem sem data nenhuma passa pelo filtro
+                ts = lambda m: m.get("timestamp") or m["_data"].get("mediaKeyTimestamp")
+                msgs = [m for m in msgs if ts(m) is None or ts(m) >= int(q["filter.timestamp.gte"])]
             ini = int(q.get("offset", 0))
             return msgs[ini:ini + int(q.get("limit", 100))], 200
         if p[2] == "chats" and p[4] == "messages":

@@ -46,6 +46,7 @@ class Waha(Caso):
         self.audio = w.msg(ANA, "3A02", AGORA - 2 * DIA, tipo="ptt", duration="12", mimetype="audio/ogg; codecs=opus")
         # mídia que o WEBJS devolve sem timestamp: vale a hora da chave da mídia
         w.msg(ANA, "3A03", None, tipo="ptt", mediaKeyTimestamp=AGORA - DIA - 60, mimetype="audio/ogg; codecs=opus")
+        w.msg(ANA, "3A05", None, corpo="texto que o WEBJS devolve sem data nenhuma")
         w.msg(ANA, "3A04", AGORA - DIA, tipo="document", filename="Proposta.pdf", caption="Proposta.pdf",
               mimetype="application/pdf")
         w.msg(GRUPO, "3B01", AGORA - 2 * DIA, corpo="bom dia", participante="222@lid")
@@ -62,6 +63,8 @@ class Waha(Caso):
         doc = msgs[3]
         self.assertEqual((doc["texto"], doc["legenda"]), ("Proposta.pdf", None))  # legenda igual ao nome não repete
         self.assertEqual(msgs[1]["duracao"], 12)
+        # sem data nenhuma: fica de fora, mas registrado para o sync avisar
+        self.assertEqual(fonte.sem_data[ANA], ["false_" + ANA + "_3A05"])
 
     def test_nome_do_participante_pelo_telefone(self):
         fonte = self.preparar()

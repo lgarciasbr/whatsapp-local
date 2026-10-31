@@ -33,6 +33,7 @@ class FonteWaha:
         self.url = conta["url"].rstrip("/")
         self.chave = chave
         self.sessao = conta.get("sessao", "default")
+        self.sem_data = {}  # chat -> ids que o WAHA devolveu sem data nenhuma (ficam de fora)
 
     # ---------- HTTP ----------
 
@@ -98,14 +99,21 @@ class FonteWaha:
             if len(pagina) < params["limit"]:
                 break
             offset += params["limit"]
-        msgs = {}
+        msgs, sem_data = {}, []
         for x in brutas:
             m = mensagem(x, chat)
             if m is None:
+                sem_data.append(x["id"])
                 continue
             if (ini is not None and m["data"] < ini) or (fim is not None and m["data"] >= fim):
                 continue  # data aproximada pode cair fora do período pedido
             msgs[m["id"]] = m
+        if sem_data:
+            # O engine WEBJS às vezes não sabe a data de uma mensagem, e a posição na lista também não
+            # serve (pode estar meses fora do lugar). Melhor deixar de fora e avisar do que inventar.
+            self.sem_data[chat] = sem_data
+            print(f"[aviso] o WAHA devolveu {len(sem_data)} mensagem(ns) sem data em {chat}; ficaram de fora: "
+                  + ", ".join(sem_data), file=sys.stderr)
         msgs = sorted(msgs.values(), key=lambda m: m["data"])
         if ids:
             msgs = [m for m in msgs if m["id"] in set(ids)]
@@ -186,7 +194,6 @@ def mensagem(x, chat):
     aproximada = not ts
     ts = ts or d.get("mediaKeyTimestamp")
     if not ts:
-        print(f"[aviso] mensagem sem data, ignorada: {x['id']}", file=sys.stderr)
         return None
     mime = ((x.get("media") or {}).get("mimetype") or d.get("mimetype") or "").split(";")[0]
     return {"id": wid, "chat": chat, "tipo": tipo, "eu": bool(x.get("fromMe")), "data": ts,
