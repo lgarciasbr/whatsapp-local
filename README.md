@@ -5,6 +5,8 @@ SPDX-License-Identifier: MIT
 
 # whatsapp-local
 
+[![testes](https://github.com/lgarciasbr/whatsapp-local/actions/workflows/testes.yml/badge.svg)](https://github.com/lgarciasbr/whatsapp-local/actions/workflows/testes.yml)
+
 Lê conversas do WhatsApp, transcreve áudios e vídeos **nesta máquina** com [whisper.cpp](https://github.com/ggml-org/whisper.cpp) e exporta para Markdown. Serve para resumir conversas, levantar demandas e acompanhar negociações, sozinho ou com um agente de IA (Claude Code, Pi, Codex), sem mandar áudio para serviço de transcrição.
 
 - **Só leitura.** Nunca envia, responde, reage nem marca mensagens como lidas.
@@ -34,7 +36,7 @@ Precisa do Python 3.9+, do `ffmpeg` e do `whisper-cli` (whisper.cpp).
 brew install ffmpeg whisper-cpp
 # Linux: ffmpeg pelo gerenciador da distribuição; whisper.cpp compilado (instruções no instalador)
 
-git clone <este repositório> whatsapp-local
+git clone https://github.com/lgarciasbr/whatsapp-local.git
 cd whatsapp-local
 python3 instalar.py
 ```
@@ -138,7 +140,7 @@ Para cada pessoa do CRM (nota `type: crm/person`), o sync acha a conversa pelo `
 python3 -m unittest discover -s tests -t .
 ```
 
-Os testes usam um WAHA falso, um banco do app do Mac falso e um vault de CRM falso. Nenhum dado real.
+Os testes usam um WAHA falso, um banco do app do Mac falso e um vault de CRM falso. Nenhum dado real. Rodam a cada mudança no macOS e no Linux, com Python 3.9, 3.12 e 3.13.
 
 ## Créditos
 
