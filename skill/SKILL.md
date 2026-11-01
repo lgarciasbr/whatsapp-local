@@ -73,7 +73,7 @@ Antes da primeira transcrição da sessão, rodar `wa modelo`. Se sair com **có
 
 `wa exportar` cria uma pasta por conversa (`Privado - Nome` ou `Grupo Nome`) com transcript Markdown, `Anexos/` e `Mensagens.json`. O JSON guarda tudo o que já foi exportado: cada exportação junta as mensagens pelo id do WhatsApp, sem apagar o histórico, mesmo que ele tenha sumido da fonte. Não apague o JSON nem os anexos. Transcripts sem `Mensagens.json` são protegidos contra sobrescrita; não contorne a proteção apagando ou renomeando o arquivo.
 
-`wa sync` atualiza as conversas listadas em `"sync"` no config (por nome, número, id ou nome do grupo): o histórico inteiro na primeira vez, depois os últimos `dias`. Um nome só vale se bater com uma única conversa; o id fica gravado e passa a ser usado mesmo que o nome mude. Tem trava contra duas execuções ao mesmo tempo. `wa agendar` mostra (ou `--instalar` instala) o agendamento.
+`wa sync` atualiza as conversas listadas em `"sync"` no config (por nome, número, id ou nome do grupo): o histórico inteiro na primeira vez, depois os últimos `dias`. Um nome só vale se bater com uma única conversa; o id fica gravado e passa a ser usado mesmo que o nome mude. Tem trava contra duas execuções ao mesmo tempo. `wa agendar` mostra (ou `--instalar` instala, `--remover` desfaz) o agendamento. No macOS, o launchd abre o app WhatsApp Local Sync, que roda `wa sync`; na primeira execução o macOS pede ao usuário permissão para esse app acessar pastas protegidas (Documentos, iCloud Drive, OneDrive). Não sugira dar Acesso Total ao Disco ao Python. Sem nada configurado em `"sync"`, o sync avisa e não faz nada.
 
 ### Atualizações incrementais
 

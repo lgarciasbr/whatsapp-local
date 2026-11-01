@@ -3,6 +3,8 @@ SPDX-FileCopyrightText: 2026 Leandro Garcia
 SPDX-License-Identifier: MIT
 -->
 
+<p align="center"><img src="assets/logo.svg" alt="" width="128"></p>
+
 # whatsapp-local
 
 [![testes](https://github.com/lgarciasbr/whatsapp-local/actions/workflows/testes.yml/badge.svg)](https://github.com/lgarciasbr/whatsapp-local/actions/workflows/testes.yml)
@@ -23,7 +25,7 @@ Lê conversas do WhatsApp, transcreve áudios e vídeos **nesta máquina** com [
 | Fonte WAHA | sim | sim | não testado |
 | Fonte app do Mac | sim (WhatsApp Desktop nativo) | não existe app oficial | não suportado |
 | Transcrição, exportação e sync | sim | sim | não testado |
-| Agendamento (`wa agendar`) | launchd | systemd ou cron | não |
+| Agendamento (`wa agendar`) | launchd + app WhatsApp Local Sync | systemd ou cron | não |
 
 **Windows não foi testado.** A fonte WAHA usa só HTTP e pode funcionar, mas sem garantia. Ler o app de Windows não é suportado: ele guarda o banco num formato criptografado diferente.
 
@@ -108,7 +110,12 @@ Depois de uma leitura bem-sucedida, o sync compara a data da última mensagem no
 
 Mensagens na mesma marca de tempo, edições e mudanças que não alteram o resumo podem esperar essa releitura. O histórico exportado continua preservado, inclusive mensagens removidas da fonte. Falhas de exportação ou transcrição não habilitam o atalho. Mesmo numa releitura, arquivos com conteúdo idêntico não são regravados.
 
-Para rodar periodicamente: `wa agendar` mostra o agendamento; `wa agendar --instalar` instala (launchd no macOS, timer do systemd ou cron no Linux), a cada 30 minutos por padrão.
+### Agendamento
+
+`wa agendar` mostra o agendamento; `wa agendar --instalar` instala, a cada 30 minutos por padrão (`--minutos N`); `wa agendar --remover` desfaz. Se a seção `"sync"` não tiver nenhuma conversa nem a integração com o CRM, o sync avisa que não há nada configurado.
+
+- **Linux:** timer do systemd de usuário ou, sem ele, uma linha de cron.
+- **macOS:** o launchd abre o app **WhatsApp Local Sync** (`~/Applications`), que só executa `wa sync`. O macOS protege Documentos, iCloud Drive e pastas como a do OneDrive; um Python iniciado direto pelo launchd não tem a quem pedir permissão e é bloqueado. Na primeira execução, o macOS pede a permissão em nome do app: permita. Ela vale só para esse app, não para o Python nem para o terminal. O app é criado com `osacompile` e assinado localmente, sem nenhuma dependência. Reinstalar o agendamento só recria o app quando algo mudou (o comando, o ambiente ou o ícone); se ele for recriado, o macOS pede a permissão de novo. Logs em `<dados>/logs/` (`sync.log` e `erros.log`).
 
 ## Integração com o Obsidian CRM
 
@@ -149,7 +156,7 @@ Para cada pessoa do CRM (nota `type: crm/person`), o sync procura a conversa pel
 
 - **Histórico.** O app do Mac e o WAHA são aparelhos vinculados: só têm o que o WhatsApp sincronizou quando foram conectados, mais o que chegou depois. O que já foi exportado continua no `Mensagens.json`.
 - **Mídia expira.** Áudio e vídeo saem do servidor do WhatsApp em umas 2 semanas. Depois disso, só reenviando. Por isso vale rodar o sync com frequência.
-- **Fonte desktop.** O terminal (e o agendamento) precisa de Acesso Total ao Disco. Baixar mídia que o app não baixou consulta o servidor do WhatsApp por fora do app oficial; o `wa` só faz isso quando pedido.
+- **Fonte desktop.** O terminal precisa de Acesso Total ao Disco para ler o banco do app; no agendamento, quem precisa é o app WhatsApp Local Sync. Baixar mídia que o app não baixou consulta o servidor do WhatsApp por fora do app oficial; o `wa` só faz isso quando pedido.
 - **Fonte WAHA.** O áudio passa pelo seu servidor WAHA antes de chegar aqui; a transcrição continua local. Testado com o engine WEBJS. Ler uma conversa inteira pode levar uns 30 s; o sync lê só a janela recente.
 - **Privacidade.** São conversas privadas. Mídia, transcrições e exportações ficam nas pastas que você escolher, com permissão só do seu usuário.
 
@@ -165,6 +172,8 @@ Os testes usam um WAHA falso, um banco do app do Mac falso e um vault de CRM fal
 
 - **Filipe, da Comunidade Ratos de IA**: primeira versão (`whatsapp-desktop-local`): leitura do WhatsApp Desktop do Mac, decifragem da mídia, transcrição local com whisper.cpp e a skill.
 - **Leandro Garcia**: fonte WAHA, contas, sync, exportação, integração com o Obsidian CRM, instalador e testes, e as alterações nos arquivos da primeira versão.
+
+O logo ([`assets/logo.svg`](assets/logo.svg)) é de Leandro Garcia, sob a mesma licença MIT, e também é o ícone do app do macOS (`macos/icone.icns`, gerado por `macos/gerar_icone.sh`).
 
 Cada arquivo diz no cabeçalho de quem é (padrão [REUSE](https://reuse.software)/SPDX). Histórico em [CHANGELOG.md](CHANGELOG.md).
 

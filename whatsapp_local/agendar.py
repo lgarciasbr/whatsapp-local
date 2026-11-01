@@ -6,6 +6,7 @@ import shutil
 import subprocess
 import sys
 
+from . import app_macos
 from .modelo import ErroFonte
 
 ROTULO = "io.github.whatsapp-local.sync"
@@ -35,25 +36,15 @@ def _ambiente(cfg):
     return env
 
 
-def _launchd(cfg, minutos, instalar, remover, logs):
-    plist = os.path.expanduser(f"~/Library/LaunchAgents/{ROTULO}.plist")
-    if remover:
-        subprocess.run(["launchctl", "unload", plist], capture_output=True)
-        if os.path.exists(plist):
-            os.unlink(plist)
-        print(f"Removido: {plist}")
-        return
-    env = "".join(f"\t\t<key>{k}</key>\n\t\t<string>{_xml(v)}</string>\n" for k, v in _ambiente(cfg).items())
-    args = "".join(f"\t\t<string>{_xml(a)}</string>\n" for a in comando())
-    conteudo = f"""<?xml version="1.0" encoding="UTF-8"?>
+def plist_launchd(app, minutos, logs):
+    """O launchd abre o app (não o Python): assim o macOS pede acesso às pastas protegidas em nome do app."""
+    args = "".join(f"\t\t<string>{_xml(a)}</string>\n" for a in ["/usr/bin/open", "-g", "-j", app])
+    return f"""<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
 	<key>Label</key>
 	<string>{ROTULO}</string>
-	<key>EnvironmentVariables</key>
-	<dict>
-{env}	</dict>
 	<key>ProgramArguments</key>
 	<array>
 {args}	</array>
@@ -61,25 +52,39 @@ def _launchd(cfg, minutos, instalar, remover, logs):
 	<true/>
 	<key>StartInterval</key>
 	<integer>{minutos * 60}</integer>
-	<key>StandardOutPath</key>
-	<string>{_xml(os.path.join(logs, "sync.log"))}</string>
 	<key>StandardErrorPath</key>
-	<string>{_xml(os.path.join(logs, "erros.log"))}</string>
+	<string>{_xml(os.path.join(logs, "launchd.log"))}</string>
 </dict>
 </plist>
 """
+
+
+def _launchd(cfg, minutos, instalar, remover, logs):
+    plist = os.path.expanduser(f"~/Library/LaunchAgents/{ROTULO}.plist")
+    app = app_macos.caminho_app()
+    if remover:
+        subprocess.run(["launchctl", "unload", plist], capture_output=True)
+        if os.path.exists(plist):
+            os.unlink(plist)
+        app_macos.remover(app)
+        print(f"Removidos: {plist} e {app}")
+        return
+    linha = app_macos.comando_shell(comando(), _ambiente(cfg), logs)
+    conteudo = plist_launchd(app, minutos, logs)
     if not instalar:
-        print(f"# {plist}\n{conteudo}\nPara instalar: wa agendar --instalar")
+        print(f"# {plist}\n{conteudo}\n# {app} executa:\n{linha}\n\nPara instalar: wa agendar --instalar")
         return
     os.makedirs(logs, mode=0o700, exist_ok=True)
+    recriado = app_macos.criar(linha, app)
     os.makedirs(os.path.dirname(plist), exist_ok=True)
     with open(plist, "w", encoding="utf-8") as f:
         f.write(conteudo)
     subprocess.run(["launchctl", "unload", plist], capture_output=True)
     subprocess.run(["launchctl", "load", "-w", plist], check=True)
-    print(f"Instalado: {plist} (a cada {minutos} min e no login). Logs em {logs}.")
-    print("Se a exportação for para uma pasta protegida do macOS (OneDrive, iCloud, Documentos), o launchd\n"
-          f"pode ser bloqueado: dê Acesso Total ao Disco a {sys.executable} em Ajustes > Privacidade e Segurança.")
+    print(f"Instalado: {plist} (a cada {minutos} min e no login), abrindo {app}. Logs em {logs}.")
+    if recriado:
+        print(f"Na primeira execução, o macOS pode pedir que \"{app_macos.NOME}\" acesse pastas protegidas\n"
+              "(Documentos, iCloud Drive, OneDrive): permita. A permissão vale só para esse app.")
 
 
 def _xml(s):
