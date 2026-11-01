@@ -102,6 +102,12 @@ A exportação cria uma pasta por conversa com o transcript em Markdown, `Anexos
 
 `wa sync` baixa (pelo WAHA), transcreve e exporta cada conversa: o histórico inteiro na primeira vez, depois os últimos `dias`. Na primeira vez, o nome é resolvido e o id da conversa fica gravado em `<dados>/sync-estado.json`; depois, o sync segue pelo id mesmo que o nome mude. Uma conversa com problema não para as outras.
 
+### Sync incremental
+
+Depois de uma leitura bem-sucedida, o sync compara a data da última mensagem no resumo da conversa. Sem mudança, adia a leitura e não regrava os transcripts. Esse resumo pode ficar desatualizado no WAHA: por isso, relê ao menos uma vez a cada 24 horas **quando o sync é executado**. Para conferir imediatamente: `wa sync --forcar`.
+
+Mensagens na mesma marca de tempo, edições e mudanças que não alteram o resumo podem esperar essa releitura. O histórico exportado continua preservado, inclusive mensagens removidas da fonte. Falhas de exportação ou transcrição não habilitam o atalho. Mesmo numa releitura, arquivos com conteúdo idêntico não são regravados.
+
 Para rodar periodicamente: `wa agendar` mostra o agendamento; `wa agendar --instalar` instala (launchd no macOS, timer do systemd ou cron no Linux), a cada 30 minutos por padrão.
 
 ## Integração com o Obsidian CRM

@@ -75,6 +75,10 @@ Antes da primeira transcrição da sessão, rodar `wa modelo`. Se sair com **có
 
 `wa sync` atualiza as conversas listadas em `"sync"` no config (por nome, número, id ou nome do grupo): o histórico inteiro na primeira vez, depois os últimos `dias`. Um nome só vale se bater com uma única conversa; o id fica gravado e passa a ser usado mesmo que o nome mude. Tem trava contra duas execuções ao mesmo tempo. `wa agendar` mostra (ou `--instalar` instala) o agendamento.
 
+### Atualizações incrementais
+
+Conversas com o mesmo resumo da última leitura bem-sucedida são puladas por até 24 horas. A releitura diária ocorre na próxima execução do sync, não em segundo plano. O resumo do WAHA pode estar desatualizado; use `wa sync --forcar` quando precisar conferir imediatamente ou quando faltar algo recente. O histórico já exportado é preservado. Transcripts com conteúdo igual não são regravados.
+
 ### Obsidian CRM
 
 Com `"obsidian_crm"` no `"sync"`, o sync também atende o plugin Obsidian CRM (https://github.com/lgarciasbr/obsidian-crm): para cada nota `crm/person`, procura a conversa pelo `phone` em cada conta configurada e exporta uma pasta por conversa em `<pasta do CRM>/WhatsApp/People/`: `<nome>` na conta principal, `<nome> (<conta>)` nas outras, e `<nome> (<número>)` para um segundo número na mesma conta. Telefone sem `+` e com 10 ou 11 dígitos é brasileiro (55); com `+`, o país é o informado. Grupos configurados vão para `Group/<nome>/`. O status fica em `<pasta do CRM>/WhatsApp/Status da sincronização.md`. Só lê as notas do CRM. Uma pessoa só é associada quando o telefone leva a uma única conversa; **nunca associar por nome sozinho** nem confirmar nomes parecidos sem o usuário.

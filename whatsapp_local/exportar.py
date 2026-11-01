@@ -164,6 +164,12 @@ def exportar(registros, jid, base, pasta, titulo):
     for caminho, conteudo in [(arquivo_dados, json.dumps(msgs, ensure_ascii=False, indent=2)),
                               (arquivo_md, "\n".join(topo) + "\n" + "\n".join(linhas))]:
         if os.path.exists(caminho):
+            with open(caminho, encoding="utf-8") as f:
+                anterior = f.read()
+            # A data de geração não é mudança na conversa.
+            normalizar = lambda s: re.sub(r"gerado em \d{2}/\d{2}/\d{4}:", "gerado em:", s)
+            if normalizar(anterior) == normalizar(conteudo):
+                continue
             shutil.copy2(caminho, caminho + ".bak")
         temporario = caminho + ".tmp"
         with open(temporario, "w", encoding="utf-8") as f:

@@ -35,6 +35,7 @@ class Contexto:
     def __init__(self, cfg):
         self.cfg = cfg
         self._fontes, self._convs, self._nomes = {}, {}, {}
+        self.estado = Estado(cfg.pasta_dados)
 
     def fonte(self, conta):
         conta = conta or self.cfg.conta_padrao
@@ -58,16 +59,18 @@ class Contexto:
 class Estado:
     def __init__(self, pasta):
         self.arquivo = os.path.join(pasta, "sync-estado.json")
-        self.ids = {}
+        self.ids, self.verificacoes = {}, {}
         if os.path.exists(self.arquivo):
             with open(self.arquivo, encoding="utf-8") as f:
-                self.ids = json.load(f).get("ids", {})
+                dados = json.load(f)
+                self.ids = dados.get("ids", {})
+                self.verificacoes = dados.get("verificacoes", {})
 
     def salvar(self):
         pasta_privada(os.path.dirname(self.arquivo))
         fd = os.open(self.arquivo + ".tmp", os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
         with os.fdopen(fd, "w", encoding="utf-8") as f:
-            json.dump({"ids": self.ids}, f, ensure_ascii=False, indent=2)
+            json.dump({"ids": self.ids, "verificacoes": self.verificacoes}, f, ensure_ascii=False, indent=2)
         os.replace(self.arquivo + ".tmp", self.arquivo)
 
 
@@ -93,17 +96,42 @@ def processar(ctx, conta, conv, base, pasta, nome, dias, log=print):
     fonte = ctx.fonte(conta)
     nome = nome or conv["nome"] or conv["id"].split("@")[0]
     pasta = pasta or exportar.pasta_padrao(nome, conv["grupo"])
-    primeira = not os.path.exists(os.path.join(base, exportar.limpa_nome(pasta), "Mensagens.json"))
+    destino = os.path.join(base, exportar.limpa_nome(pasta))
+    arquivo = os.path.join(destino, "Mensagens.json")
+    primeira = not os.path.exists(arquivo)
+    titulo = exportar.titulo_padrao(nome, conv["grupo"])
+    md = os.path.join(destino, f"Transcript - {exportar.limpa_nome(titulo)}.md")
+    chave = json.dumps([conta or cfg.conta_padrao, conv["id"], os.path.abspath(destino)])
+    anterior = ctx.estado.verificacoes.get(chave, {})
+    agora = time.time()
+    # Overview do WEBJS pode ficar desatualizado: é só uma dica. Revalidar ao menos diariamente.
+    if (not cfg.sync.get("forcar") and not primeira and os.path.isfile(md)
+            and conv.get("ultima") is not None and anterior.get("ultima") == conv["ultima"]
+            and agora - anterior.get("verificado", 0) < 86400
+            and anterior.get("dias") == dias and anterior.get("whisper") == cfg.whisper):
+        return {"mensagens": anterior["mensagens"], "pasta": destino,
+                "sem_data": anterior.get("sem_data", 0), "sem_alteracoes": True}
     msgs = fonte.mensagens(conv["id"], None if primeira else time.time() - dias * 86400)
+    falhas_download = 0
     if fonte.tipo == "waha" or cfg.sync.get("baixar_midia_desktop"):
-        operacoes.baixar(fonte, operacoes.com_midia(msgs), log=lambda *_: None)
-    operacoes.transcrever(fonte, msgs, cfg.whisper, log=lambda *_: None)
+        _, _, falhas_download = operacoes.baixar(fonte, operacoes.com_midia(msgs), log=lambda *_: None)
+    _, _, _, falhas_transcricao = operacoes.transcrever(fonte, msgs, cfg.whisper, log=lambda *_: None)
     # Os nomes dos contatos só servem para os autores em grupo, e buscá-los é lento no WAHA.
     regs = operacoes.registros(fonte, conv, msgs, ctx.nomes(conta) if conv["grupo"] else {})
     r = exportar.exportar(regs, conv["id"], base, pasta, exportar.titulo_padrao(nome, conv["grupo"]))
     if r is not None:
         r["sem_data"] = len(getattr(fonte, "sem_data", {}).get(conv["id"], []))
         r["primeira"] = primeira
+        # Arquivos expirados são definitivos; falhas temporárias deixam mídia ainda
+        # baixável e precisam ser tentadas novamente na próxima execução.
+        pendentes = falhas_download and any(fonte.status_midia(m)[0] == "baixavel"
+                                          for m in operacoes.com_midia(msgs))
+        if pendentes or falhas_transcricao:
+            ctx.estado.verificacoes.pop(chave, None)
+            return r
+        ctx.estado.verificacoes[chave] = {
+            "ultima": conv.get("ultima"), "verificado": agora, "dias": dias,
+            "whisper": dict(cfg.whisper), "mensagens": r["mensagens"], "sem_data": r["sem_data"]}
     return r
 
 
@@ -127,7 +155,8 @@ def executar(cfg, log=print):
 def _executar(cfg, log):
     conf = cfg.sync
     dias = int(conf.get("dias") or 30)
-    ctx, estado = Contexto(cfg), Estado(cfg.pasta_dados)
+    ctx = Contexto(cfg)
+    estado = ctx.estado
     resultados = []
 
     for item in conf.get("conversas") or []:

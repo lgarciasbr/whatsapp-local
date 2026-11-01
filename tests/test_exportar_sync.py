@@ -91,6 +91,49 @@ class Sync(Caso):
             w.msg(chat, "M" + chat[:3], AGORA - DIA, corpo=f"oi de {chat}")
         w.lids = [{"lid": FULANA, "pn": "554891234567@c.us"}]
 
+    def test_incremental_revalida_nova_mensagem_diaria_e_forcada(self):
+        from unittest import mock
+        cfg = self.config(sync={"destino": os.path.join(self.tmp, "Notas"),
+                                "conversas": [{"conversa": "Fulana de Tal"}]})
+        rodar = lambda: sync.executar(cfg, log=lambda *_: None)
+        rodar()
+        pasta = os.path.join(self.tmp, "Notas", "Privado - Fulana de Tal")
+        md = os.path.join(pasta, "Transcript - Conversa privada com Fulana de Tal.md")
+        antes = os.stat(md).st_mtime_ns
+        self.waha.pedidos.clear()
+        rodar()
+        self.assertFalse(any("/messages" in p for p in self.waha.pedidos))
+        self.assertEqual(antes, os.stat(md).st_mtime_ns)
+        self.waha.msg(FULANA, "NOVA", AGORA - 60, corpo="nova mensagem")
+        self.waha.chats[0]["ts"] = AGORA - 60
+        rodar()
+        self.assertIn("nova mensagem", ler(md))
+        self.waha.pedidos.clear()
+        with mock.patch("time.time", return_value=AGORA + 86401):
+            rodar()
+        self.assertTrue(any("/messages" in p for p in self.waha.pedidos))
+        self.waha.pedidos.clear()
+        cfg.sync["forcar"] = True
+        mtime = os.stat(md).st_mtime_ns
+        rodar()
+        self.assertTrue(any("/messages" in p for p in self.waha.pedidos))
+        self.assertEqual(mtime, os.stat(md).st_mtime_ns)  # conteúdo igual: não regrava
+        cfg.sync["forcar"] = False
+        os.unlink(md)
+        rodar()
+        self.assertTrue(os.path.isfile(md))
+
+    def test_falha_nao_marca_conversa_como_verificada(self):
+        from unittest import mock
+        cfg = self.config(sync={"destino": os.path.join(self.tmp, "Notas"),
+                                "conversas": [{"conversa": "Fulana de Tal"}]})
+        with mock.patch("whatsapp_local.exportar.exportar", side_effect=OSError("disco cheio")):
+            r = sync.executar(cfg, log=lambda *_: None)
+        self.assertEqual(r[0][0], "erro")
+        self.waha.pedidos.clear()
+        sync.executar(cfg, log=lambda *_: None)
+        self.assertTrue(any("/messages" in p for p in self.waha.pedidos))
+
     def test_por_nome_fixa_o_id(self):
         cfg = self.config(sync={"destino": os.path.join(self.tmp, "Notas"),
                                 "conversas": [{"conversa": "Fulana de Tal"}, {"conversa": "Equipe Projeto"}]})

@@ -201,6 +201,7 @@ def cmd_exportar(cfg, args):
 def cmd_sync(cfg, args):
     if not cfg.sync.get("conversas") and not cfg.sync.get("obsidian_crm"):
         raise ErroFonte(f"Nada para sincronizar: configure \"sync\" em {cfg.caminho}.")
+    cfg.sync["forcar"] = args.forcar
     resultados = sync.executar(cfg)
     if any(t == "erro" for t, _, _ in resultados):
         sys.exit(1)
@@ -278,6 +279,7 @@ def main(argv=None):
     sp.set_defaults(fn=cmd_exportar)
 
     sp = sub.add_parser("sync", help="atualiza as conversas configuradas em \"sync\"")
+    sp.add_argument("--forcar", action="store_true", help="relê as conversas mesmo sem alteração no resumo")
     sp.set_defaults(fn=cmd_sync)
 
     sp = sub.add_parser("modelo", help="qual modelo do whisper será usado (código 3 = nenhum)")
