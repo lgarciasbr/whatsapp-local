@@ -218,6 +218,11 @@ class Sync(Caso):
         self.assertIn("trabalho (WAHA", status)
         self.assertIn("pessoal (WAHA", status)
 
+    def test_sem_nada_configurado_avisa(self):
+        from whatsapp_local.modelo import ErroFonte
+        with self.assertRaisesRegex(ErroFonte, "Nada configurado"):
+            sync.executar(self.config(sync={"dias": 14}), log=lambda *_: None)
+
     def test_trava(self):
         cfg = self.config()
         with trava(os.path.join(cfg.pasta_dados, "sync.lock")):

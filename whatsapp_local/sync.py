@@ -154,6 +154,9 @@ def executar(cfg, log=print):
 
 def _executar(cfg, log):
     conf = cfg.sync
+    if not conf.get("conversas") and not conf.get("obsidian_crm"):
+        raise ErroFonte("Nada configurado para sincronizar: acrescente \"conversas\" à seção \"sync\" do config "
+                        "(veja o README) ou configure a integração com o Obsidian CRM.")
     dias = int(conf.get("dias") or 30)
     ctx = Contexto(cfg)
     estado = ctx.estado
