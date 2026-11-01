@@ -21,6 +21,7 @@ NOME = "WhatsApp Local Sync"
 BUNDLE_ID = "io.github.whatsapp-local.sync"
 ICONE = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "macos", "icone.icns")
 RECEITA = "whatsapp-local.json"  # em Contents/Resources: o que gerou o app, para não recriá-lo à toa
+FORMATO = 2  # muda quando a montagem do app muda, para recriar apps feitos por versões anteriores
 
 
 def caminho_app():
@@ -48,7 +49,7 @@ def criar(linha_shell, destino=None, icone=ICONE):
     assinatura e faria o macOS pedir a permissão de novo."""
     destino = destino or caminho_app()
     fonte = applescript(linha_shell)
-    receita = {"script": fonte, "icone": _sha256(icone)}
+    receita = {"formato": FORMATO, "script": fonte, "icone": _sha256(icone)}
     if _receita(destino) == receita and _assinatura_valida(destino):
         return False
     with tempfile.TemporaryDirectory() as tmp:
@@ -58,9 +59,13 @@ def criar(linha_shell, destino=None, icone=ICONE):
         _rodar(["osacompile", "-o", app, script])
         recursos = os.path.join(app, "Contents", "Resources")
         shutil.copyfile(icone, os.path.join(recursos, "applet.icns"))
+        # O ícone padrão do osacompile fica em Assets.car e, via CFBundleIconName, teria prioridade.
+        if os.path.exists(os.path.join(recursos, "Assets.car")):
+            os.unlink(os.path.join(recursos, "Assets.car"))
         info = os.path.join(app, "Contents", "Info.plist")
         with open(info, "rb") as f:
             dados = plistlib.load(f)
+        dados.pop("CFBundleIconName", None)
         dados.update({"CFBundleIdentifier": BUNDLE_ID, "CFBundleName": NOME, "CFBundleIconFile": "applet",
                       "LSUIElement": True})  # sem ícone no Dock
         with open(info, "wb") as f:

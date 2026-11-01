@@ -7,6 +7,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -60,6 +61,9 @@ class AgendamentoMacOS(unittest.TestCase):
             info = plistlib.load(f)
         self.assertEqual(info["CFBundleIdentifier"], app_macos.BUNDLE_ID)
         self.assertTrue(info["LSUIElement"])
+        # O ícone padrão do osacompile (Assets.car via CFBundleIconName) teria prioridade sobre o nosso.
+        self.assertNotIn("CFBundleIconName", info)
+        self.assertFalse(os.path.exists(os.path.join(app, "Contents", "Resources", "Assets.car")))
         with open(app_macos.ICONE, "rb") as a, open(os.path.join(app, "Contents", "Resources", "applet.icns"), "rb") as b:
             self.assertEqual(a.read(), b.read())
         subprocess.run(["codesign", "--verify", app], check=True)
@@ -70,6 +74,8 @@ class AgendamentoMacOS(unittest.TestCase):
 
         self.assertFalse(app_macos.criar(self.linha(), app))  # igual: preserva a assinatura e a permissão
         self.assertTrue(app_macos.criar(self.linha(self.comando + ["outro"]), app))
+        with mock.patch.object(app_macos, "FORMATO", app_macos.FORMATO + 1):
+            self.assertTrue(app_macos.criar(self.linha(self.comando + ["outro"]), app))  # app feito por versão anterior
 
     @unittest.skipUnless(NO_MAC, "só no macOS")
     def test_remover(self):
