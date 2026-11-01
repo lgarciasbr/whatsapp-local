@@ -79,7 +79,11 @@ Antes da primeira transcrição da sessão, rodar `wa modelo`. Se sair com **có
 
 Conversas com o mesmo resumo da última leitura bem-sucedida são puladas por até 24 horas. A releitura diária ocorre na próxima execução do sync, não em segundo plano. O resumo do WAHA pode estar desatualizado; use `wa sync --forcar` quando precisar conferir imediatamente ou quando faltar algo recente. O histórico já exportado é preservado. Transcripts com conteúdo igual não são regravados.
 
-### Obsidian CRM
+### Obsidian CRM (opcional)
+
+Esta skill pertence ao **whatsapp-local**, não ao plugin CRM. O `AGENTS.md` do CRM pode continuar original: não acrescente instruções de WhatsApp nele. Para habilitar a integração, use o configurador separado `python3 integrar_obsidian_crm.py` na pasta do whatsapp-local, depois da instalação principal. Ele não instala nem modifica o plugin: veja https://github.com/lgarciasbr/obsidian-crm.
+
+Ao pedir “atualiza o WhatsApp do CRM”, execute `wa sync`: ele percorre **todas as pessoas do CRM** nas contas configuradas, não apenas pessoas citadas na conversa. Achou pelo telefone, sincroniza; não achou, informa a pendência. Uma pergunta sobre uma pessoa específica pode usar os comandos individuais sem mudar a lista do sync.
 
 Com `"obsidian_crm"` no `"sync"`, o sync também atende o plugin Obsidian CRM (https://github.com/lgarciasbr/obsidian-crm): para cada nota `crm/person`, procura a conversa pelo `phone` em cada conta configurada e exporta uma pasta por conversa em `<pasta do CRM>/WhatsApp/People/`: `<nome>` na conta principal, `<nome> (<conta>)` nas outras, e `<nome> (<número>)` para um segundo número na mesma conta. Telefone sem `+` e com 10 ou 11 dígitos é brasileiro (55); com `+`, o país é o informado. Grupos configurados vão para `Group/<nome>/`. O status fica em `<pasta do CRM>/WhatsApp/Status da sincronização.md`. Só lê as notas do CRM. Uma pessoa só é associada quando o telefone leva a uma única conversa; **nunca associar por nome sozinho** nem confirmar nomes parecidos sem o usuário.
 

@@ -112,7 +112,19 @@ Para rodar periodicamente: `wa agendar` mostra o agendamento; `wa agendar --inst
 
 ## Integração com o Obsidian CRM
 
-Para quem usa o plugin [Obsidian CRM](https://github.com/lgarciasbr/obsidian-crm):
+O instalador principal cuida apenas do WhatsApp. Esta integração é opcional e não é necessária para ler, transcrever ou sincronizar conversas.
+
+Se você também usa o plugin [Obsidian CRM](https://github.com/lgarciasbr/obsidian-crm), execute **depois da instalação**, na pasta do whatsapp-local:
+
+```bash
+python3 integrar_obsidian_crm.py
+```
+
+Esse configurador separado pede o vault e as contas onde procurar. Ele habilita o sync de **todas as pessoas do CRM encontradas pelo telefone**, sem manter uma lista manual. Faz backup da configuração antes de alterá-la, preserva as contas, os grupos e as associações existentes, e não mexe em segredos, no plugin ou no `AGENTS.md` do CRM. Não instala o plugin: instale-o pelo repositório acima antes de integrar.
+
+Não precisa de outra skill: a skill `whatsapp-local`, registrada no Pi (ou no agente escolhido) pelo instalador principal, já sabe executar `wa sync`. A integração só fornece a configuração local.
+
+Você também pode configurar manualmente:
 
 ```json
 "sync": {
