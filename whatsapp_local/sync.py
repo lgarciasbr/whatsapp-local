@@ -98,7 +98,8 @@ def processar(ctx, conta, conv, base, pasta, nome, dias, log=print):
     if fonte.tipo == "waha" or cfg.sync.get("baixar_midia_desktop"):
         operacoes.baixar(fonte, operacoes.com_midia(msgs), log=lambda *_: None)
     operacoes.transcrever(fonte, msgs, cfg.whisper, log=lambda *_: None)
-    regs = operacoes.registros(fonte, conv, msgs, ctx.nomes(conta))
+    # Os nomes dos contatos só servem para os autores em grupo, e buscá-los é lento no WAHA.
+    regs = operacoes.registros(fonte, conv, msgs, ctx.nomes(conta) if conv["grupo"] else {})
     r = exportar.exportar(regs, conv["id"], base, pasta, exportar.titulo_padrao(nome, conv["grupo"]))
     if r is not None:
         r["sem_data"] = len(getattr(fonte, "sem_data", {}).get(conv["id"], []))
