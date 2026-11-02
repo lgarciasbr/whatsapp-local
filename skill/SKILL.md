@@ -1,6 +1,6 @@
 ---
 name: whatsapp-local
-description: Lê conversas do WhatsApp pelo app do Mac (banco local do WhatsApp Desktop) ou por um servidor WAHA, transcreve áudios e vídeos nesta máquina com whisper.cpp (sem API de transcrição) e exporta para Markdown. Com isso resume a conversa, extrai demandas ou analisa negociações. Esta versão só lê: não envia, não responde nem marca como lida. Use quando pedirem "lê a conversa com o cliente X no zap", "o que o fulano pediu no WhatsApp", "resume a negociação com Y", "extrai as demandas do grupo Z", "transcreve os áudios do cliente", "atualiza o WhatsApp" ou "sincroniza o WhatsApp do CRM". Precisa do comando `wa` instalado (whatsapp-local), de whisper-cli e de ffmpeg.
+description: Lê conversas do WhatsApp pelo app do Mac (banco local do WhatsApp Desktop) ou por um servidor WAHA, transcreve áudios e vídeos nesta máquina com whisper.cpp (sem API de transcrição) e exporta para Markdown. Com isso resume a conversa, extrai demandas ou analisa negociações. Esta versão só lê e não envia, não responde nem marca como lida. Use quando pedirem "lê a conversa com o cliente X no zap", "o que o fulano pediu no WhatsApp", "resume a negociação com Y", "extrai as demandas do grupo Z", "transcreve os áudios do cliente", "atualiza o WhatsApp" ou "sincroniza o WhatsApp do CRM". Precisa do comando `wa` instalado (whatsapp-local), de whisper-cli e de ffmpeg.
 ---
 <!--
 SPDX-FileCopyrightText: 2026 Filipe (Comunidade Ratos de IA)
