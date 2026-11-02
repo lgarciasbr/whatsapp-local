@@ -113,6 +113,14 @@ class Waha(Caso):
             abrir_fonte(self.config()).conversas()
 
 
+class DataWaha(unittest.TestCase):
+    def test_data_em_milissegundos_vira_segundos(self):
+        from whatsapp_local.waha import data_de
+        self.assertEqual(data_de({"_data": {"mediaKeyTimestamp": 1793500000123}}), 1793500000)
+        self.assertEqual(data_de({"timestamp": 1793500000}), 1793500000)
+        self.assertIsNone(data_de({}))
+
+
 class Desktop(Caso):
     def test_le_o_app_do_mac(self):
         pasta = os.path.join(self.tmp, "app")

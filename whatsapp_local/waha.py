@@ -175,9 +175,11 @@ class FonteWaha:
 
 def data_de(x):
     """Timestamp da mensagem. Algumas mídias vêm sem data do WEBJS; aí vale a da chave da mídia,
-    gerada ~1 min antes do envio. Algumas mensagens não têm data nenhuma (None)."""
+    gerada ~1 min antes do envio. Algumas mensagens não têm data nenhuma (None). Às vezes a data
+    vem em milissegundos: sempre devolve segundos."""
     d = x.get("_data") or {}
-    return x.get("timestamp") or d.get("t") or d.get("mediaKeyTimestamp")
+    ts = x.get("timestamp") or d.get("t") or d.get("mediaKeyTimestamp")
+    return int(ts) // 1000 if ts and int(ts) > 10 ** 11 else ts
 
 
 def mensagem(x, chat):
