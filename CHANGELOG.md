@@ -5,6 +5,8 @@
 - Agendamento no macOS por um app próprio (**WhatsApp Local Sync**): o launchd abre o app, e o macOS pede a permissão para pastas protegidas (Documentos, iCloud Drive, OneDrive) em nome dele, sem Acesso Total ao Disco para o Python. O app só é recriado quando algo muda, para não perder a permissão.
 - Logo do projeto (`assets/logo.svg`), também usado como ícone do app.
 - `wa sync` avisa quando não há nada configurado para sincronizar.
+- A documentação descreve o que esta versão faz (não envia mensagens) em vez de prometer "nunca envia".
+- Correção: datas do WAHA em milissegundos quebravam a leitura da conversa.
 - Sync incremental: conversas sem mudança no resumo do WAHA são puladas, com releitura completa a cada 24 horas e `wa sync --forcar`.
 - Integração com o Obsidian CRM: procura em todas as contas configuradas, assume o Brasil (`+55`) em telefones sem código do país, uma pasta por conversa e histórico completo na primeira exportação.
 - Configurador da integração com o Obsidian CRM (`integrar_obsidian_crm.py`) separado do instalador principal.

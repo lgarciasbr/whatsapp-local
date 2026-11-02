@@ -224,7 +224,7 @@ def cmd_agendar(cfg, args):
 def main(argv=None):
     if hasattr(signal, "SIGPIPE"):
         signal.signal(signal.SIGPIPE, signal.SIG_DFL)  # `| head` não deve dar traceback
-    p = argparse.ArgumentParser(prog="wa", description="Lê, transcreve (localmente) e exporta conversas do WhatsApp. Só leitura.")
+    p = argparse.ArgumentParser(prog="wa", description="Lê, transcreve (localmente) e exporta conversas do WhatsApp. Esta versão não envia mensagens.")
     p.add_argument("--version", action="version", version=f"whatsapp-local {__version__}")
     p.add_argument("--conta", help="conta do config.json (padrão: conta_padrao)")
     p.add_argument("--config", help="caminho do config.json")

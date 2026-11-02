@@ -11,7 +11,7 @@ SPDX-License-Identifier: MIT
 
 Lê conversas do WhatsApp, transcreve áudios e vídeos **nesta máquina** com [whisper.cpp](https://github.com/ggml-org/whisper.cpp) e exporta para Markdown. Serve para resumir conversas, levantar demandas e acompanhar negociações, sozinho ou com um agente de IA (Claude Code, Pi, Codex), sem mandar áudio para serviço de transcrição.
 
-- **Só leitura.** Nunca envia, responde, reage nem marca mensagens como lidas.
+- **Esta versão não envia mensagens.** Só lê: não envia, responde, reage nem marca mensagens como lidas.
 - **Duas fontes.** O app WhatsApp Desktop do Mac (lendo o banco local) ou um servidor [WAHA](https://waha.devlike.pro) que você controla.
 - **Mais de um número.** Cada conta tem nome: `wa --conta pessoal ...`.
 - **Sync.** Mantém conversas escolhidas (por nome, número ou grupo) exportadas e transcritas numa pasta, sem perder histórico.
