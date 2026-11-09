@@ -12,7 +12,7 @@ SPDX-License-Identifier: MIT
 Lê conversas do WhatsApp, transcreve áudios e vídeos **nesta máquina** com [whisper.cpp](https://github.com/ggml-org/whisper.cpp) e exporta para Markdown. Serve para resumir conversas, levantar demandas e acompanhar negociações, sozinho ou com um agente de IA (Claude Code, Pi, Codex), sem mandar áudio para serviço de transcrição.
 
 - **Esta versão não envia mensagens.** Só lê: não envia, responde, reage nem marca mensagens como lidas.
-- **Duas fontes.** O app WhatsApp Desktop do Mac (lendo o banco local) ou um servidor [WAHA](https://waha.devlike.pro) que você controla.
+- **Três fontes.** O app WhatsApp Desktop do Mac (lendo o banco local), um servidor [WAHA](https://waha.devlike.pro) que você controla, ou o espelho local do [wacli](https://wacli.sh).
 - **Mais de um número.** Cada conta tem nome: `wa --conta pessoal ...`.
 - **Sync.** Mantém conversas escolhidas (por nome, número ou grupo) exportadas e transcritas numa pasta, sem perder histórico.
 - **Obsidian CRM.** Integração opcional com o plugin [Obsidian CRM](https://github.com/lgarciasbr/obsidian-crm).
@@ -23,6 +23,7 @@ Lê conversas do WhatsApp, transcreve áudios e vídeos **nesta máquina** com [
 | | macOS | Linux | Windows |
 |---|---|---|---|
 | Fonte WAHA | sim | sim | não testado |
+| Fonte wacli | sim | sim | não testado |
 | Fonte app do Mac | sim (WhatsApp Desktop nativo) | não existe app oficial | não suportado |
 | Transcrição, exportação e sync | sim | sim | não testado |
 | Agendamento (`wa agendar`) | launchd + app WhatsApp Local Sync | systemd ou cron | não |
@@ -43,7 +44,7 @@ cd whatsapp-local
 python3 instalar.py
 ```
 
-O instalador confere as dependências, cria o comando `wa` em `~/.local/bin`, pergunta quais contas configurar (app do Mac e/ou WAHA), guarda a API key do WAHA fora do config e instala a skill para os agentes encontrados.
+O instalador confere as dependências, cria o comando `wa` em `~/.local/bin`, pergunta quais contas configurar (app do Mac, WAHA e/ou wacli), guarda a API key do WAHA fora do config e instala a skill para os agentes encontrados.
 
 Depois, um modelo do whisper. Se você já tiver um `ggml-*.bin`, o `wa modelo` acha. Senão:
 
@@ -78,7 +79,8 @@ A exportação cria uma pasta por conversa com o transcript em Markdown, `Anexos
   "conta_padrao": "trabalho",
   "contas": {
     "trabalho": {"fonte": "waha", "url": "https://waha.exemplo.com", "sessao": "default"},
-    "mac": {"fonte": "desktop"}
+    "mac": {"fonte": "desktop"},
+    "espelho": {"fonte": "wacli", "conta_wacli": "pessoal"}
   },
   "whisper": {"idioma": "pt"}
 }
@@ -87,6 +89,42 @@ A exportação cria uma pasta por conversa com o transcript em Markdown, `Anexos
 - **`dados`**: onde ficam a mídia baixada e as transcrições (uma pasta por conta). Uma conta pode ter `"dados"` próprio; duas contas do mesmo número (app do Mac e WAHA) podem apontar para a mesma pasta.
 - **API key do WAHA**: na variável `WAHA_API_KEY_<CONTA>` (ex.: `WAHA_API_KEY_TRABALHO`) ou em `segredos.env`, ao lado do config, com permissão só do usuário. Nunca no `config.json`.
 - **`whisper`**: `idioma`, e opcionalmente `modelo` (caminho do `ggml-*.bin`) e `executavel` (caminho do `whisper-cli`).
+
+### Qual fonte usar
+
+Escolha uma por conta. As três devolvem o mesmo formato de mensagem. O id da mensagem no WhatsApp é o mesmo, então duas contas do mesmo número podem apontar para a mesma pasta de `dados`.
+
+| Fonte | Quando | O que precisa |
+|---|---|---|
+| `desktop` | Mac com o WhatsApp Desktop nativo já logado | Acesso Total ao Disco no terminal |
+| `waha` | Um servidor WAHA seu, no Mac, Linux ou outra máquina | URL, nome da sessão e API key |
+| `wacli` | Sem servidor. O espelho fica neste computador | Binário `wacli`, pareamento e `wacli sync` |
+
+O `wa` não pareia, não envia e não marca como lida. Na fonte wacli, quem fala com o WhatsApp é o `wacli`.
+
+### Fonte wacli, do zero
+
+```bash
+# macOS ou Linux. No Windows, baixe o zip da release e coloque wacli.exe no PATH.
+brew install openclaw/tap/wacli
+
+wacli accounts add pessoal          # pede o pareamento (QR ou código no celular)
+wacli --account pessoal sync --once # enche o espelho e sai
+```
+
+Depois, no `config.json`:
+
+```json
+"pessoal": {"fonte": "wacli", "conta_wacli": "pessoal"}
+```
+
+`conta_wacli` é o nome dado no `wacli accounts add`. O `wa` acha o config do wacli em `~/.wacli/config.yaml` ou, no Linux, em `~/.local/state/wacli/config.yaml`. Se o espelho estiver em outro lugar, use `"store": "~/caminho/do/espelho"`. O `wa` lê `wacli.db` e, se existir, só a tabela `whatsmeow_lid_map` de `session.db` (lid e telefone, para usar o mesmo id das outras fontes). Não lê chaves.
+
+O espelho para quando o `wacli sync` para. Para continuar atualizando: `wacli --account pessoal sync --once`, ou `--follow` se quiser deixar ligado. O `wa sync` não faz isso.
+
+Mídia que ainda não está no disco é pedida com `wacli --read-only media download`. Isso não grava no espelho e não marca a conversa como lida. Áudio antigo pode ter saído do servidor. O `wa` não pede reenvio pelo celular.
+
+O pareamento ocupa uma vaga de aparelho conectado. O WhatsApp Web não é API oficial. O histórico que chega é o que o celular manda, sem garantia de estar completo.
 
 ## Sync
 
@@ -102,7 +140,7 @@ A exportação cria uma pasta por conversa com o transcript em Markdown, `Anexos
 }
 ```
 
-`wa sync` baixa (pelo WAHA), transcreve e exporta cada conversa: o histórico inteiro na primeira vez, depois os últimos `dias`. Na primeira vez, o nome é resolvido e o id da conversa fica gravado em `<dados>/sync-estado.json`; depois, o sync segue pelo id mesmo que o nome mude. Uma conversa com problema não para as outras.
+`wa sync` baixa a mídia que falta (WAHA, ou wacli em modo somente leitura; no app do Mac, só se `baixar_midia_desktop` estiver ligado), transcreve e exporta cada conversa: o histórico inteiro na primeira vez, depois os últimos `dias`. Na primeira vez, o nome é resolvido e o id da conversa fica gravado em `<dados>/sync-estado.json`; depois, o sync segue pelo id mesmo que o nome mude. Uma conversa com problema não para as outras.
 
 ### Sync incremental
 
@@ -158,7 +196,8 @@ Para cada pessoa do CRM (nota `type: crm/person`), o sync procura a conversa pel
 - **Mídia expira.** Áudio e vídeo saem do servidor do WhatsApp em umas 2 semanas. Depois disso, só reenviando. Por isso vale rodar o sync com frequência.
 - **Fonte desktop.** O terminal precisa de Acesso Total ao Disco para ler o banco do app; no agendamento, quem precisa é o app WhatsApp Local Sync. Baixar mídia que o app não baixou consulta o servidor do WhatsApp por fora do app oficial; o `wa` só faz isso quando pedido.
 - **Fonte WAHA.** O áudio passa pelo seu servidor WAHA antes de chegar aqui; a transcrição continua local. Testado com o engine WEBJS. Ler uma conversa inteira pode levar uns 30 s; o sync lê só a janela recente.
-- **Privacidade.** São conversas privadas. Mídia, transcrições e exportações ficam nas pastas que você escolher, com permissão só do seu usuário.
+- **Fonte wacli.** O espelho e as chaves do aparelho vinculado ficam em `~/.wacli` (ou no `store` configurado), fora deste repositório, com permissão só do usuário. O `wa` não envia mensagem por esse binário.
+- **Privacidade.** São conversas privadas. Mídia, transcrições e exportações ficam nas pastas que você escolher, com permissão só do seu usuário. Configuração pessoal e API key ficam em `~/.config/whatsapp-local/` (`config.json` e `segredos.env`, modo 600), também fora do repositório. Não copie isso, nem `~/.wacli`, nem uma pasta exportada, para um Git.
 
 ## Testes
 

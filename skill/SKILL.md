@@ -1,6 +1,6 @@
 ---
 name: whatsapp-local
-description: Lê conversas do WhatsApp pelo app do Mac (banco local do WhatsApp Desktop) ou por um servidor WAHA, transcreve áudios e vídeos nesta máquina com whisper.cpp (sem API de transcrição) e exporta para Markdown. Com isso resume a conversa, extrai demandas ou analisa negociações. Esta versão só lê e não envia, não responde nem marca como lida. Use quando pedirem "lê a conversa com o cliente X no zap", "o que o fulano pediu no WhatsApp", "resume a negociação com Y", "extrai as demandas do grupo Z", "transcreve os áudios do cliente", "atualiza o WhatsApp" ou "sincroniza o WhatsApp do CRM". Precisa do comando `wa` instalado (whatsapp-local), de whisper-cli e de ffmpeg.
+description: Lê conversas do WhatsApp pelo app do Mac (banco local do WhatsApp Desktop), por um servidor WAHA ou pelo espelho local do wacli, transcreve áudios e vídeos nesta máquina com whisper.cpp (sem API de transcrição) e exporta para Markdown. Com isso resume a conversa, extrai demandas ou analisa negociações. Esta versão só lê e não envia, não responde nem marca como lida. Use quando pedirem "lê a conversa com o cliente X no zap", "o que o fulano pediu no WhatsApp", "resume a negociação com Y", "extrai as demandas do grupo Z", "transcreve os áudios do cliente", "atualiza o WhatsApp" ou "sincroniza o WhatsApp do CRM". Precisa do comando `wa` instalado (whatsapp-local), de whisper-cli e de ffmpeg.
 ---
 <!--
 SPDX-FileCopyrightText: 2026 Filipe (Comunidade Ratos de IA)
@@ -20,13 +20,29 @@ O comando `wa` lê conversas do WhatsApp, transcreve áudio e vídeo localmente 
 **Não faz:**
 - Não envia mensagem, não responde, não reage, não encaminha e não marca nada como lido. Se pedirem pra mandar mensagem, dizer que esta skill só lê.
 - Não usa serviço de transcrição. Se o whisper.cpp não estiver disponível, a saída é instalar e baixar um modelo (com ok do usuário).
-- Não vê o que a fonte não tem. App do Mac e WAHA são aparelhos vinculados: só têm o histórico sincronizado quando foram conectados, mais o que chegou depois. Se a conversa parecer começar "do nada", avisar o usuário.
+- Não vê o que a fonte não tem. App do Mac, WAHA e wacli são aparelhos vinculados: só têm o histórico sincronizado quando foram conectados, mais o que chegou depois. Se a conversa parecer começar "do nada", avisar o usuário. O wacli ainda precisa do `wacli sync` rodando à parte; o `wa` não atualiza o espelho.
+
+## Instalação, se o `wa` ainda não existe
+
+Siga o README do repositório. Resumo para quem acabou de clonar:
+
+1. Python 3.9+, `ffmpeg` e `whisper-cli`. No Mac: `brew install ffmpeg whisper-cpp`.
+2. `python3 instalar.py` na pasta do clone. Ele cria o comando `wa`, pergunta a fonte e, no WAHA, grava a API key em `segredos.env` (modo 600), nunca no `config.json`.
+3. `wa modelo`. Sem modelo, mostrar o tamanho e só baixar com o sim do usuário (`wa baixar-modelo turbo --confirmado`).
+4. Escolher uma fonte por conta. Não misturar a escolha no escuro:
+   - **desktop**: só Mac, WhatsApp Desktop nativo já logado. O terminal precisa de Acesso Total ao Disco.
+   - **waha**: o usuário já tem um servidor. Pedir URL, sessão e API key. A key não aparece no chat de novo e não vai para arquivo do repositório.
+   - **wacli**: sem servidor. `brew install openclaw/tap/wacli` (no Windows, o zip da release). `wacli accounts add NOME` pareia. O código ou o QR é do usuário, no celular dele. Não inventar número. Depois `wacli --account NOME sync --once`. No config: `{"fonte": "wacli", "conta_wacli": "NOME"}`.
+5. Conferir com `wa contas --testar` antes de ler conversa.
+
+O `wa` não pareia e não atualiza o espelho do wacli. Se a conversa parecer velha, o passo que falta é `wacli sync`, não outro comando do `wa`.
 
 ## Contas e fontes
 
 `wa contas` mostra as contas configuradas; `wa contas --testar` confere a conexão. Cada conta tem uma fonte:
 - **desktop**: o banco do WhatsApp Desktop nativo do macOS (não do WhatsApp Business nem de Windows). O app não precisa estar aberto, mas o terminal precisa de Acesso Total ao Disco.
 - **waha**: a API de um servidor WAHA, só com GET. Funciona no macOS e no Linux. O áudio passa pelo servidor WAHA do usuário antes de chegar aqui; a transcrição continua local.
+- **wacli**: o `wacli.db` de uma conta do [wacli](https://wacli.sh). Só leitura. A mídia que falta é pedida ao comando `wacli --read-only`, sem marcar como lida. Se o espelho estiver velho, avisar que falta um `wacli sync`.
 
 Use `wa --conta <nome> ...` para escolher a conta; sem `--conta`, vale a conta padrão. Se o usuário tem mais de um número, pergunte de qual conta é a conversa quando não estiver claro.
 
@@ -97,6 +113,12 @@ Sempre citar data e quem falou nos pontos importantes, e separar o que foi dito 
 
 Em conversa grande (mais de ~1.500 mensagens no período), sugerir um período menor ou analisar em blocos por semana.
 
-## Privacidade
+## Privacidade e o que não fazer
 
 São conversas privadas, muitas vezes de clientes. Mídia, transcrições e exportações ficam nas pastas configuradas, com permissão só do usuário. Não copiar para repositório nem para lugar compartilhado.
+
+- Não colar API key, conteúdo de `segredos.env`, `session.db` nem conversa inteira no chat. O `session.db` do wacli tem as chaves do aparelho vinculado. O `wa` só lê dele o mapa lid/telefone. Não abrir esse arquivo para inspecionar o resto.
+- Não commitar `config.json`, `segredos.env`, `~/.wacli`, exportação ou transcrição. O exemplo do repositório usa URL e número fictícios. Manter assim.
+- O binário `wacli` sabe enviar, marcar como lido e mexer em grupo. Esta skill não usa isso. Não rodar `wacli send`, `chats mark-read`, `auth logout` nem comando de grupo. Leitura é pelo `wa`. Atualizar o espelho é `wacli sync`. Parear é `wacli auth` ou `wacli accounts add`, e só com o usuário no celular.
+- Baixar mídia pelo wacli usa `wacli --read-only`. Não tirar essa flag.
+- Avisar que wacli e WAHA são clientes não oficiais e ocupam uma vaga de aparelho conectado. Não prometer histórico completo.

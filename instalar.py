@@ -95,6 +95,21 @@ def configurar():
         contas[nome] = {"fonte": "waha", "url": url.rstrip("/"), "sessao": sessao}
         if chave:
             segredos[nome_variavel(nome)] = chave
+    while sim("Adicionar uma conta lida pelo wacli?", False):
+        nome = perguntar("Nome da conta", "wacli")
+        item = {"fonte": "wacli"}
+        conta_wacli = perguntar("Nome da conta no wacli (vazio usa a padrão)", "")
+        store = perguntar("Pasta do espelho (vazio usa o config do wacli)", "")
+        if conta_wacli:
+            item["conta_wacli"] = conta_wacli
+        if store:
+            item["store"] = store
+        contas[nome] = item
+        print("O wa não pareia. Neste computador, se ainda não fez:")
+        print("  brew install openclaw/tap/wacli")
+        print(f"  wacli accounts add {conta_wacli or nome}")
+        print(f"  wacli --account {conta_wacli or nome} sync --once")
+        print("Não use o wacli para enviar mensagem. Este programa só lê.")
     if not contas:
         print("Nenhuma conta configurada; rode de novo quando quiser.")
         return

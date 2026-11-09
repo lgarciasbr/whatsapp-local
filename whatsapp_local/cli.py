@@ -47,6 +47,8 @@ def cmd_contas(cfg, args):
         desc = conta.get("fonte")
         if desc == "waha":
             desc += f" {conta.get('url')} sessão {conta.get('sessao', 'default')}"
+        elif desc == "wacli":
+            desc += " " + (conta.get("store") or conta.get("conta_wacli") or "padrão")
         print(f"{nome}{padrao}: {desc}")
         if args.testar:
             try:
@@ -54,6 +56,9 @@ def cmd_contas(cfg, args):
                 if fonte.tipo == "waha":
                     status, num = fonte.testar()
                     print(f"  sessão {status}, número {num}")
+                elif fonte.tipo == "wacli":
+                    n, ultima = fonte.testar()
+                    print(f"  {n} conversas no espelho local, última em {fmt_data(ultima, True)}")
                 else:
                     print(f"  {len(fonte.conversas())} conversas no app do Mac")
             except ErroFonte as e:
@@ -113,8 +118,8 @@ def cmd_inventario(cfg, args):
                   f"{mmss(cont[cat]['segundos_faltando'])} nos que faltam.", end="")
     print()
     if any(cont[c]["baixavel"] for c in CATEGORIAS):
-        if fonte.tipo == "waha":
-            print("\n'baixáveis' = ainda não pedidos ao WAHA. Áudio e vídeo costumam sumir do servidor do "
+        if fonte.tipo in ("waha", "wacli"):
+            print("\n'baixáveis' = ainda não pedidos. Áudio e vídeo costumam sumir do servidor do "
                   "WhatsApp em ~2 semanas; o que sumiu passa a 'fora do ar' depois da primeira tentativa.")
         elif not checou:
             print("\n'baixáveis' = só link ainda válido (rodou com --sem-checar).")
@@ -178,7 +183,7 @@ def cmd_transcrever(cfg, args):
     feitos, cache, sem_arquivo, falhas = operacoes.transcrever(fonte, msgs, cfg.whisper, args.idioma, args.refazer,
                                                                 log=lambda s: print(s, flush=True))
     print(f"\nTranscritos agora: {feitos} · já estavam em cache: {cache} · sem arquivo: {sem_arquivo} · falhas: {falhas}")
-    if sem_arquivo and fonte.tipo == "waha":
+    if sem_arquivo and fonte.tipo in ("waha", "wacli"):
         print("Os sem arquivo saíram do servidor do WhatsApp; só voltam se o contato reenviar.")
     elif sem_arquivo:
         print("Os sem arquivo não foram baixados pelo app. Rode `wa inventario` e, se o usuário quiser, `wa baixar`.")

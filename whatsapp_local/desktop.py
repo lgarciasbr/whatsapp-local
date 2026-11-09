@@ -39,7 +39,7 @@ class FonteDesktop:
         self.pasta = os.path.expanduser(conta.get("pasta_whatsapp") or PASTA_APP)
         if sys.platform != "darwin" and not conta.get("pasta_whatsapp"):
             raise ErroFonte("A fonte desktop só existe no macOS (WhatsApp Desktop nativo). "
-                            "No Linux, use uma conta com \"fonte\": \"waha\".")
+                            "No Linux, use uma conta com \"fonte\": \"waha\" ou \"wacli\".")
         self.banco = os.path.join(self.pasta, "ChatStorage.sqlite")
         self.contatos = os.path.join(self.pasta, "ContactsV2.sqlite")
         self.pasta_msg = os.path.join(self.pasta, "Message")

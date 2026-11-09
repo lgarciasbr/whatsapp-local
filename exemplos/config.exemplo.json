@@ -4,7 +4,8 @@
   "contas": {
     "trabalho": {"fonte": "waha", "url": "https://waha.exemplo.com", "sessao": "default"},
     "pessoal": {"fonte": "waha", "url": "https://waha.exemplo.com", "sessao": "pessoal"},
-    "mac": {"fonte": "desktop", "dados": "~/.local/share/whatsapp-local/trabalho"}
+    "mac": {"fonte": "desktop", "dados": "~/.local/share/whatsapp-local/trabalho"},
+    "espelho": {"fonte": "wacli", "conta_wacli": "pessoal"}
   },
   "whisper": {"idioma": "pt"},
   "sync": {

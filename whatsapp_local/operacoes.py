@@ -50,10 +50,10 @@ def transcrever(fonte, msgs, conf, idioma=None, refazer=False, log=print):
             cache += 1
             continue
         st, p = fonte.status_midia(m)
-        if not p and st == "baixavel" and fonte.tipo == "waha":
+        if not p and st == "baixavel" and fonte.tipo in ("waha", "wacli"):
             try:
                 p = fonte.baixar(m)
-            except (MidiaIndisponivel, urllib.error.HTTPError, urllib.error.URLError, OSError):
+            except (MidiaIndisponivel, urllib.error.HTTPError, urllib.error.URLError, OSError, RuntimeError):
                 p = None
         if not p:
             sem_arquivo += 1

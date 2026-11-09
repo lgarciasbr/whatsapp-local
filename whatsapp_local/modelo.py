@@ -2,9 +2,9 @@
 # SPDX-FileCopyrightText: 2026 Leandro Garcia
 # SPDX-License-Identifier: MIT
 # Baseado na primeira versão de Filipe (Comunidade Ratos de IA); alterado por Leandro Garcia.
-"""Tipos de mensagem e funções comuns às duas fontes.
+"""Tipos de mensagem e funções comuns às fontes.
 
-As duas fontes (app do Mac e WAHA) devolvem mensagens no mesmo formato:
+As fontes (app do Mac, WAHA e wacli) devolvem mensagens no mesmo formato:
 
     {"id": id da mensagem no WhatsApp (igual nas duas fontes), "chat": id da conversa,
      "tipo": código abaixo, "eu": bool, "data": timestamp Unix, "texto", "legenda",

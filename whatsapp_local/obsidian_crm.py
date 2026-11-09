@@ -184,7 +184,12 @@ def _nota_status(destino, contas, ctx, resultados):
         except ErroFonte:
             origens.append(f"{conta} (indisponível)")
             continue
-        origens.append(f"{conta} (WAHA, sessão {fonte.sessao})" if fonte.tipo == "waha" else f"{conta} (WhatsApp Desktop do Mac)")
+        if fonte.tipo == "waha":
+            origens.append(f"{conta} (WAHA, sessão {fonte.sessao})")
+        elif fonte.tipo == "wacli":
+            origens.append(f"{conta} (wacli, {fonte.store})")
+        else:
+            origens.append(f"{conta} (WhatsApp Desktop do Mac)")
     origem = ", ".join(origens)
     rotulos = {"ok": "OK", "erro": "Erro", "pendente": "Pendente"}
     ordem = {"pendente": 0, "erro": 1, "ok": 2}

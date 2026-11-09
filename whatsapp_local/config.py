@@ -9,7 +9,8 @@ Arquivo: ~/.config/whatsapp-local/config.json (ou WA_CONFIG). Exemplo:
       "conta_padrao": "trabalho",
       "contas": {
         "trabalho": {"fonte": "waha", "url": "https://waha.exemplo.com", "sessao": "default"},
-        "mac": {"fonte": "desktop", "dados": "~/.local/share/whatsapp-local/trabalho"}
+        "mac": {"fonte": "desktop", "dados": "~/.local/share/whatsapp-local/trabalho"},
+        "pessoal": {"fonte": "wacli", "conta_wacli": "pessoal"}
       },
       "whisper": {"idioma": "pt"},
       "sync": {...}
@@ -72,8 +73,8 @@ class Config:
             raise ErroFonte(f"Conta '{nome}' não existe em {self.caminho}. Contas: {', '.join(self.contas) or 'nenhuma'}.")
         conta = dict(self.contas[nome])
         conta["nome"] = nome
-        if conta.get("fonte") not in ("desktop", "waha"):
-            raise ErroFonte(f"Conta '{nome}': \"fonte\" deve ser \"desktop\" ou \"waha\".")
+        if conta.get("fonte") not in ("desktop", "waha", "wacli"):
+            raise ErroFonte(f"Conta '{nome}': \"fonte\" deve ser \"desktop\", \"waha\" ou \"wacli\".")
         return conta
 
     def pasta_conta(self, nome):
@@ -103,5 +104,8 @@ def abrir_fonte(cfg, nome_conta=None):
         from .waha import FonteWaha
         chave = cfg.segredo(conta.get("api_key_env") or nome_variavel(conta["nome"]))
         return FonteWaha(conta, cache, chave)
+    if conta["fonte"] == "wacli":
+        from .wacli import FonteWacli
+        return FonteWacli(conta, cache)
     from .desktop import FonteDesktop
     return FonteDesktop(conta, cache)

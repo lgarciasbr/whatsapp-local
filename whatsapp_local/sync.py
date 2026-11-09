@@ -113,7 +113,7 @@ def processar(ctx, conta, conv, base, pasta, nome, dias, log=print):
                 "sem_data": anterior.get("sem_data", 0), "sem_alteracoes": True}
     msgs = fonte.mensagens(conv["id"], None if primeira else time.time() - dias * 86400)
     falhas_download = 0
-    if fonte.tipo == "waha" or cfg.sync.get("baixar_midia_desktop"):
+    if fonte.tipo in ("waha", "wacli") or cfg.sync.get("baixar_midia_desktop"):
         _, _, falhas_download = operacoes.baixar(fonte, operacoes.com_midia(msgs), log=lambda *_: None)
     _, _, _, falhas_transcricao = operacoes.transcrever(fonte, msgs, cfg.whisper, log=lambda *_: None)
     # Os nomes dos contatos só servem para os autores em grupo, e buscá-los é lento no WAHA.
