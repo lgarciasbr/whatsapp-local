@@ -2,7 +2,7 @@
 
 ## Não publicado
 
-- Fonte wacli: lê o espelho local do [wacli](https://wacli.sh) (`wacli.db`), sem parear nem enviar. A mídia que falta é pedida ao comando `wacli` em modo somente leitura. Conversa privada com mapa lid usa o mesmo `@lid` das outras fontes, para não quebrar a pasta já exportada.
+- Fonte wacli: lê o espelho local do [wacli](https://wacli.sh) (`wacli.db`), sem parear nem enviar. `wa sync` e a leitura de uma conversa atualizam o espelho antes; se a atualização falhar, não exportam o arquivo velho. A mídia que falta é pedida ao comando `wacli` em modo somente leitura. Conversa privada com mapa lid usa o mesmo `@lid` das outras fontes, para não quebrar a pasta já exportada.
 - Agendamento no macOS por um app próprio (**WhatsApp Local Sync**): o launchd abre o app, e o macOS pede a permissão para pastas protegidas (Documentos, iCloud Drive, OneDrive) em nome dele, sem Acesso Total ao Disco para o Python. O app só é recriado quando algo muda, para não perder a permissão.
 - Logo do projeto (`assets/logo.svg`), também usado como ícone do app.
 - `wa sync` avisa quando não há nada configurado para sincronizar.

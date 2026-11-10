@@ -100,7 +100,7 @@ Escolha uma por conta. As três devolvem o mesmo formato de mensagem. O id da me
 | `waha` | Um servidor WAHA seu, no Mac, Linux ou outra máquina | URL, nome da sessão e API key |
 | `wacli` | Sem servidor. O espelho fica neste computador | Binário `wacli`, pareamento e `wacli sync` |
 
-O `wa` não pareia, não envia e não marca como lida. Na fonte wacli, quem fala com o WhatsApp é o `wacli`.
+O `wa` não pareia, não envia e não marca como lida. Na fonte wacli, quem fala com o WhatsApp é o `wacli`. `wa sync` e a leitura de uma conversa (`wa mensagens`, `wa exportar`, `wa transcrever`) rodam `wacli sync --once` antes de ler. Se essa atualização falhar, a conta fica de fora: o `wa` não exporta o arquivo velho como se estivesse em dia.
 
 ### Fonte wacli, do zero
 
@@ -120,7 +120,7 @@ Depois, no `config.json`:
 
 `conta_wacli` é o nome dado no `wacli accounts add`. O `wa` acha o config do wacli em `~/.wacli/config.yaml` ou, no Linux, em `~/.local/state/wacli/config.yaml`. Se o espelho estiver em outro lugar, use `"store": "~/caminho/do/espelho"`. O `wa` lê `wacli.db` e, se existir, só a tabela `whatsmeow_lid_map` de `session.db` (lid e telefone, para usar o mesmo id das outras fontes). Não lê chaves.
 
-O espelho para quando o `wacli sync` para. Para continuar atualizando: `wacli --account pessoal sync --once`, ou `--follow` se quiser deixar ligado. O `wa sync` não faz isso.
+O pareamento é manual (`wacli accounts add`). Depois disso, o `wa` atualiza o espelho sozinho na hora de ler ou sincronizar. Não precisa deixar o `wacli sync --follow` ligado.
 
 Mídia que ainda não está no disco é pedida com `wacli --read-only media download`. Isso não grava no espelho e não marca a conversa como lida. Áudio antigo pode ter saído do servidor. O `wa` não pede reenvio pelo celular.
 
@@ -140,7 +140,7 @@ O pareamento ocupa uma vaga de aparelho conectado. O WhatsApp Web não é API of
 }
 ```
 
-`wa sync` baixa a mídia que falta (WAHA, ou wacli em modo somente leitura; no app do Mac, só se `baixar_midia_desktop` estiver ligado), transcreve e exporta cada conversa: o histórico inteiro na primeira vez, depois os últimos `dias`. Na primeira vez, o nome é resolvido e o id da conversa fica gravado em `<dados>/sync-estado.json`; depois, o sync segue pelo id mesmo que o nome mude. Uma conversa com problema não para as outras.
+`wa sync` primeiro atualiza o espelho das contas wacli. Nas outras fontes a leitura já vai ao WhatsApp (WAHA) ou ao banco do app (Mac). Depois baixa a mídia que falta (WAHA, ou wacli em modo somente leitura; no app do Mac, só se `baixar_midia_desktop` estiver ligado), transcreve e exporta cada conversa. Na primeira vez entra o que a fonte tem; o que já foi exportado continua no `Mensagens.json`. Nas seguintes, entram os últimos `dias`. Na primeira vez, o nome é resolvido e o id da conversa fica gravado em `<dados>/sync-estado.json`; depois, o sync segue pelo id mesmo que o nome mude. Uma conversa com problema não para as outras.
 
 ### Sync incremental
 

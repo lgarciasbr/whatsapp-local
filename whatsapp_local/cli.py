@@ -29,6 +29,14 @@ def periodo(args):
     return ini, fim
 
 
+def abrir(cfg, conta, atualizar=False):
+    """Abre a conta. No wacli, a leitura que o usuário pediu atualiza o espelho antes; se falhar, para."""
+    fonte = abrir_fonte(cfg, conta)
+    if atualizar and fonte.tipo == "wacli":
+        fonte.atualizar()
+    return fonte
+
+
 def conversa_e_mensagens(fonte, args, ids=None):
     if not args.com:
         raise ErroFonte("Informe --com <conversa> (nome, número ou id).")
@@ -59,6 +67,7 @@ def cmd_contas(cfg, args):
                 elif fonte.tipo == "wacli":
                     n, ultima = fonte.testar()
                     print(f"  {n} conversas no espelho local, última em {fmt_data(ultima, True)}")
+                    print("  este teste não atualiza o espelho; `wa sync` e a leitura de uma conversa atualizam")
                 else:
                     print(f"  {len(fonte.conversas())} conversas no app do Mac")
             except ErroFonte as e:
@@ -66,7 +75,7 @@ def cmd_contas(cfg, args):
 
 
 def cmd_conversas(cfg, args):
-    fonte = abrir_fonte(cfg, args.conta)
+    fonte = abrir(cfg, args.conta, atualizar=True)
     convs = fonte.conversas()
     if args.busca:
         q = sem_acento(args.busca)
@@ -76,7 +85,7 @@ def cmd_conversas(cfg, args):
 
 
 def cmd_inventario(cfg, args):
-    fonte = abrir_fonte(cfg, args.conta)
+    fonte = abrir(cfg, args.conta, atualizar=True)
     conv, msgs = conversa_e_mensagens(fonte, args)
     cont = {c: {"total": 0, "disco": 0, "baixado": 0, "baixavel": 0, "expirado": 0, "indisponivel": 0,
                 "segundos": 0, "segundos_faltando": 0, "transcritos": 0} for c in CATEGORIAS}
@@ -126,7 +135,7 @@ def cmd_inventario(cfg, args):
 
 
 def cmd_mensagens(cfg, args):
-    fonte = abrir_fonte(cfg, args.conta)
+    fonte = abrir(cfg, args.conta, atualizar=True)
     conv, msgs = conversa_e_mensagens(fonte, args)
     if args.limite:
         msgs = msgs[-args.limite:]
@@ -166,7 +175,7 @@ def cmd_mensagens(cfg, args):
 
 
 def cmd_baixar(cfg, args):
-    fonte = abrir_fonte(cfg, args.conta)
+    fonte = abrir(cfg, args.conta, atualizar=True)
     _, msgs = conversa_e_mensagens(fonte, args, args.ids)
     ok, pulou, falhou = operacoes.baixar(fonte, operacoes.com_midia(msgs, args.tipos and args.tipos.split(",")))
     print(f"\nBaixados: {ok} · já existiam: {pulou} · sem como baixar/falharam: {falhou}")
@@ -177,7 +186,7 @@ def cmd_transcrever(cfg, args):
     if falta:
         raise ErroFonte(f"Falta instalar: {', '.join(falta)}. Rode o instalador para ver como.")
     transcricao.modelo(cfg.whisper)  # falha cedo (código 3) se não houver modelo
-    fonte = abrir_fonte(cfg, args.conta)
+    fonte = abrir(cfg, args.conta, atualizar=True)
     _, msgs = conversa_e_mensagens(fonte, args, args.ids)
     msgs = operacoes.com_midia(msgs, (args.tipos or "audio,video").split(","))
     feitos, cache, sem_arquivo, falhas = operacoes.transcrever(fonte, msgs, cfg.whisper, args.idioma, args.refazer,
@@ -190,7 +199,7 @@ def cmd_transcrever(cfg, args):
 
 
 def cmd_exportar(cfg, args):
-    fonte = abrir_fonte(cfg, args.conta)
+    fonte = abrir(cfg, args.conta, atualizar=True)
     conv, msgs = conversa_e_mensagens(fonte, args)
     nome = args.nome or conv["nome"] or conv["id"].split("@")[0]
     r = exportar.exportar(operacoes.registros(fonte, conv, msgs, fonte.nomes()), conv["id"], args.destino,

@@ -196,6 +196,14 @@ class Wacli(Caso):
         self.assertIn(FULANA, fonte.indice_telefones()["5548991234567"])
         self.assertEqual(fonte.status_midia(msgs[1])[0], "disco")
 
+    def test_abre_banco_wal(self):
+        fonte = self.preparar()
+        con = sqlite3.connect(os.path.join(fonte.store, "wacli.db"))
+        con.execute("pragma journal_mode=wal")
+        con.close()
+        fonte._con = None
+        self.assertEqual([c["nome"] for c in fonte.conversas() if not c["grupo"]], ["Fulana de Tal"])
+
     def test_baixa_pelo_comando_somente_leitura(self):
         fonte = self.preparar()
         script = os.path.join(self.tmp, "wacli")
@@ -250,6 +258,48 @@ class Wacli(Caso):
         self.assertEqual([c["id"] for c in fonte.conversas() if not c["grupo"]], [FULANA])
         self.assertEqual([m["id"] for m in fonte.mensagens(FULANA)], ["3A01", "3A02", "3A03"])
         self.assertIn(FULANA, fonte.indice_telefones()["5548991234567"])
+        script = os.path.join(self.tmp, "wacli-midia")
+        with open(script, "w") as f:
+            f.write("#!/bin/sh\nprintf %s \"$*\" > \"$0.args\"\nprintf OggS > \"${11}\"\n")
+        os.chmod(script, 0o755)
+        fonte.executavel = script
+        msg = next(m for m in fonte.mensagens(FULANA) if m["id"] == "3A03")
+        fonte.baixar(msg)
+        with open(script + ".args") as f:
+            self.assertIn("--chat 554891234567@s.whatsapp.net", f.read())
+
+    def test_atualizar_o_espelho_antes_de_ler(self):
+        fonte = self.preparar()
+        script = os.path.join(self.tmp, "wacli-sync")
+        with open(script, "w") as f:
+            f.write("#!/bin/sh\nprintf %s \"$*\" > \"$0.args\"\nexit 0\n")
+        os.chmod(script, 0o755)
+        fonte.executavel = script
+        fonte.atualizar()
+        with open(script + ".args") as f:
+            args = f.read()
+        self.assertIn("sync --once", args)
+        self.assertNotIn("send", args)
+        with open(script, "w") as f:
+            f.write("#!/bin/sh\necho falhou >&2\nexit 1\n")
+        os.chmod(script, 0o755)
+        with self.assertRaises(ErroFonte) as ctx:
+            fonte.atualizar()
+        self.assertIn("Nada foi lido", str(ctx.exception))
+
+    def test_sync_nao_le_espelho_que_nao_atualizou(self):
+        from whatsapp_local.sync import Contexto, preparar_espelhos
+        fonte = self.preparar()
+        script = os.path.join(self.tmp, "wacli-falha")
+        with open(script, "w") as f:
+            f.write("#!/bin/sh\nexit 1\n")
+        os.chmod(script, 0o755)
+        cfg = self.config(contas={"espelho": {"fonte": "wacli", "store": fonte.store, "executavel": script}},
+                          conta_padrao="espelho", sync={"conversas": [{"conversa": "Fulana"}]})
+        indisponiveis = preparar_espelhos(cfg, log=lambda *_: None)
+        self.assertIn("espelho", indisponiveis)
+        with self.assertRaises(ErroFonte):
+            Contexto(cfg, indisponiveis).conversas("espelho")
 
 
 if __name__ == "__main__":

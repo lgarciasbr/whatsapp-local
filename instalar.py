@@ -105,11 +105,10 @@ def configurar():
         if store:
             item["store"] = store
         contas[nome] = item
-        print("O wa não pareia. Neste computador, se ainda não fez:")
+        print("O wa não pareia. Neste computador, uma vez:")
         print("  brew install openclaw/tap/wacli")
         print(f"  wacli accounts add {conta_wacli or nome}")
-        print(f"  wacli --account {conta_wacli or nome} sync --once")
-        print("Não use o wacli para enviar mensagem. Este programa só lê.")
+        print("Depois o wa sync atualiza o espelho sozinho. Não use o wacli para enviar mensagem.")
     if not contas:
         print("Nenhuma conta configurada; rode de novo quando quiser.")
         return

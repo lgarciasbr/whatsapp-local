@@ -11,7 +11,6 @@ import os
 import shutil
 import sqlite3
 import subprocess
-import urllib.parse
 
 from .config import expandir
 from .modelo import MIDIA, ErroFonte, MidiaIndisponivel, ext_de, variantes_telefone
@@ -41,17 +40,13 @@ class FonteWacli:
             if not os.path.exists(self.banco):
                 raise ErroFonte(f"Não achei o espelho do wacli em {self.banco}. "
                                 "Pareie a conta com `wacli auth` e rode `wacli sync --once`.")
-            uri = f"file:{urllib.parse.quote(self.banco)}?mode=ro"
+            # mode=ro falha no banco WAL do wacli ("unable to open database file"), mesmo com o arquivo no lugar.
+            # query_only lê o WAL e recusa escrita. Não é a flag URI mode=ro.
             try:
-                con = sqlite3.connect(uri, uri=True)
-            except sqlite3.OperationalError:
-                # O espelho em WAL às vezes recusa a primeira abertura enquanto o wacli ainda grava.
-                try:
-                    con = sqlite3.connect(uri, uri=True)
-                except sqlite3.Error as e:
-                    raise ErroFonte(f"Não consegui ler {self.banco}: {e}. Se o `wacli sync` estiver rodando, tente de novo.")
+                con = sqlite3.connect(self.banco)
+                con.execute("pragma query_only=on")
             except sqlite3.Error as e:
-                raise ErroFonte(f"Não consegui ler {self.banco}: {e}")
+                raise ErroFonte(f"Não consegui ler {self.banco}: {e}. Se o `wacli sync` estiver rodando, tente de novo.")
             con.row_factory = sqlite3.Row
             self._con = con
         return self._con
@@ -64,7 +59,8 @@ class FonteWacli:
             self._lids = {}
             if os.path.exists(self.sessao):
                 try:
-                    con = sqlite3.connect(f"file:{urllib.parse.quote(self.sessao)}?mode=ro", uri=True)
+                    con = sqlite3.connect(self.sessao)
+                    con.execute("pragma query_only=on")
                     for lid, pn in con.execute("select lid, pn from whatsmeow_lid_map"):
                         if lid and pn:
                             self._lids["".join(c for c in pn if c.isdigit())] = "".join(c for c in lid if c.isdigit())
@@ -92,6 +88,27 @@ class FonteWacli:
             ids.add(self.lids[user] + "@lid")
         return ids
 
+    def atualizar(self, log=None):
+        """Traz as mensagens novas para o espelho e só então deixa ler. Sem isso o arquivo fica parado."""
+        if not self.executavel:
+            raise ErroFonte("Não achei o comando `wacli` para atualizar o espelho. "
+                            "Instale com `brew install openclaw/tap/wacli`.")
+        if log:
+            log(f"Atualizando o espelho do wacli ({self.store})...")
+        try:
+            r = subprocess.run([self.executavel, "--store", self.store, "sync", "--once", "--idle-exit", "20s"],
+                               capture_output=True, text=True, timeout=900)
+        except subprocess.TimeoutExpired:
+            raise ErroFonte("O wacli não terminou de atualizar o espelho em 15 minutos. Nada foi lido desse espelho.")
+        if r.returncode != 0:
+            detalhe = (r.stderr or r.stdout or f"código {r.returncode}").strip().splitlines()
+            raise ErroFonte("Não consegui atualizar o espelho do wacli: " + (detalhe[-1] if detalhe else "sem detalhe")
+                            + ". Nada foi lido desse espelho.")
+        if self._con is not None:
+            self._con.close()
+            self._con = None
+        self._lids = None
+
     def testar(self):
         """Devolve (conversas, data da mais recente) sem falar com o WhatsApp."""
         convs = self.conversas()
@@ -102,8 +119,8 @@ class FonteWacli:
         # kind unknown acontece com @lid ainda sem o telefone resolvido: entra se tiver mensagem.
         linhas = self.con.execute("""
             select c.jid, c.name, c.kind,
-                   coalesce(c.last_message_ts,
-                            (select max(m.ts) from messages m where m.chat_jid = c.jid and m.deleted_at is null)) as ultima
+                   max(c.last_message_ts,
+                       (select max(m.ts) from messages m where m.chat_jid = c.jid and m.deleted_at is null)) as ultima
             from chats c
             where c.jid != 'status@broadcast' and c.kind != 'newsletter'
               and (c.kind in ('dm', 'group') or exists (
@@ -122,9 +139,9 @@ class FonteWacli:
     def mensagens(self, chat, ini=None, fim=None, ids=None):
         no_banco = tuple(self._ids_no_banco(chat))
         linhas = self.con.execute(
-            """select msg_id, sender_jid, sender_name, ts, from_me, text, display_text, media_type, media_caption,
-                      filename, mime_type, file_length, local_path, direct_path, media_unavailable_at, revoked,
-                      reaction_to_id
+            """select chat_jid, msg_id, sender_jid, sender_name, ts, from_me, text, display_text, media_type,
+                      media_caption, filename, mime_type, file_length, local_path, direct_path, media_unavailable_at,
+                      revoked, reaction_to_id
                from messages where chat_jid in ({}) and deleted_at is null order by ts, rowid""".format(
                    ",".join("?" * len(no_banco))), no_banco)
         msgs = []
@@ -187,9 +204,11 @@ class FonteWacli:
             raise ErroFonte("Não achei o comando `wacli` para baixar a mídia. "
                             "Instale com `brew install openclaw/tap/wacli`.")
         destino = self.cache.destino_midia(m["id"], ext_de(m))
+        # O id exposto pode ser @lid; o wacli só acha a linha pelo id gravado no espelho.
+        chat = m["_fonte"].get("chat_banco") or m["chat"]
         # --read-only baixa do servidor do WhatsApp sem gravar no espelho e sem marcar como lida.
         r = subprocess.run([self.executavel, "--read-only", "--store", self.store, "media", "download",
-                            "--chat", m["chat"], "--id", m["id"], "--output", destino],
+                            "--chat", chat, "--id", m["id"], "--output", destino],
                            capture_output=True, text=True, timeout=180)
         if r.returncode != 0 or not os.path.isfile(destino):
             detalhe = (r.stderr or r.stdout or f"código {r.returncode}").strip().splitlines()
@@ -197,6 +216,7 @@ class FonteWacli:
             if any(c in detalhe for c in ("403", "404", "410")):
                 self.cache.marcar_indisponivel(m["id"])
                 raise MidiaIndisponivel(detalhe)
+            # "no rows" é id errado ou linha ausente, não prova que o áudio saiu do servidor.
             raise RuntimeError(detalhe)
         os.chmod(destino, 0o600)
         return destino
@@ -224,7 +244,8 @@ def mensagem(r, chat):
             "mime": (r["mime_type"] or "").split(";")[0] or None,
             "autor_jid": r["sender_jid"] if chat.endswith("@g.us") else None, "nome_autor": r["sender_name"],
             "data_aproximada": False,
-            "_fonte": {"local_path": r["local_path"], "baixavel": bool(r["direct_path"]) and not r["media_unavailable_at"],
+            "_fonte": {"local_path": r["local_path"], "chat_banco": r["chat_jid"],
+                       "baixavel": bool(r["direct_path"]) and not r["media_unavailable_at"],
                        "indisponivel": bool(r["media_unavailable_at"])}}
 
 

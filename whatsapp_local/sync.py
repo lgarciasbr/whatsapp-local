@@ -32,13 +32,16 @@ from .trava import trava
 class Contexto:
     """Abre cada conta uma vez e guarda conversas e nomes durante a sincronização."""
 
-    def __init__(self, cfg):
+    def __init__(self, cfg, indisponiveis=None):
         self.cfg = cfg
+        self.indisponiveis = indisponiveis or {}
         self._fontes, self._convs, self._nomes = {}, {}, {}
         self.estado = Estado(cfg.pasta_dados)
 
     def fonte(self, conta):
         conta = conta or self.cfg.conta_padrao
+        if conta in self.indisponiveis:
+            raise ErroFonte(self.indisponiveis[conta])
         if conta not in self._fontes:
             self._fontes[conta] = abrir_fonte(self.cfg, conta)
         return self._fontes[conta]
@@ -147,6 +150,37 @@ def aviso_sem_data(r):
     return ""
 
 
+def contas_usadas(cfg):
+    """Contas que esta execução vai ler. O espelho delas tem que estar novo antes da leitura."""
+    conf = cfg.sync
+    nomes = {item.get("conta") or cfg.conta_padrao for item in conf.get("conversas") or []}
+    crm = conf.get("obsidian_crm") or {}
+    if crm:
+        nomes.update(crm.get("contas") or [crm.get("conta") or cfg.conta_padrao])
+        padrao_grupo = (crm.get("contas") or [cfg.conta_padrao])[0]
+        nomes.update(grupo.get("conta") or padrao_grupo for grupo in crm.get("grupos") or [])
+    return nomes
+
+
+def preparar_espelhos(cfg, log=print):
+    """Atualiza cada espelho wacli uma vez. Se falhar, a conta fica de fora: não exporta arquivo velho."""
+    indisponiveis = {}
+    for nome in sorted(contas_usadas(cfg)):
+        try:
+            fonte = abrir_fonte(cfg, nome)
+        except ErroFonte as e:
+            indisponiveis[nome] = str(e)
+            continue
+        if fonte.tipo != "wacli":
+            continue
+        try:
+            fonte.atualizar(log)
+        except ErroFonte as e:
+            indisponiveis[nome] = str(e)
+            log(f"[aviso] {nome}: {e}")
+    return indisponiveis
+
+
 def executar(cfg, log=print):
     with trava(os.path.join(cfg.pasta_dados, "sync.lock")):
         return _executar(cfg, log)
@@ -158,7 +192,7 @@ def _executar(cfg, log):
         raise ErroFonte("Nada configurado para sincronizar: acrescente \"conversas\" à seção \"sync\" do config "
                         "(veja o README) ou configure a integração com o Obsidian CRM.")
     dias = int(conf.get("dias") or 30)
-    ctx = Contexto(cfg)
+    ctx = Contexto(cfg, preparar_espelhos(cfg, log))
     estado = ctx.estado
     resultados = []
 
