@@ -181,6 +181,30 @@ def preparar_espelhos(cfg, log=print):
     return indisponiveis
 
 
+def coletar(cfg, conta=None, log=print):
+    """Atualiza somente os espelhos wacli, sem mídia, transcrição ou exportação.
+
+    Compartilha a trava do sync completo. Sem --conta, percorre todas as contas
+    wacli, mesmo sem integração com CRM ou seção sync configurada.
+    """
+    nomes = [conta] if conta else [n for n, c in cfg.contas.items() if c.get("fonte") == "wacli"]
+    if not nomes:
+        raise ErroFonte("Nenhuma conta wacli configurada para coletar.")
+    if conta and cfg.conta(conta)["fonte"] != "wacli":
+        raise ErroFonte(f"A conta '{conta}' não é wacli; coletar não altera WAHA nem Desktop.")
+    resultados = []
+    with trava(os.path.join(cfg.pasta_dados, "sync.lock")):
+        for nome in nomes:
+            try:
+                fonte = abrir_fonte(cfg, nome)
+                fonte.atualizar(log, timeout=240)
+                resultados.append(("ok", nome, "banco atualizado; sem transcrição ou exportação."))
+            except (ErroFonte, OSError) as e:
+                resultados.append(("erro", nome, str(e)))
+            log(f"{resultados[-1][0].upper()} · {nome}: {resultados[-1][2]}")
+    return resultados
+
+
 def executar(cfg, log=print):
     with trava(os.path.join(cfg.pasta_dados, "sync.lock")):
         return _executar(cfg, log)

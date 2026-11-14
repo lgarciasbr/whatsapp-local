@@ -88,7 +88,7 @@ class FonteWacli:
             ids.add(self.lids[user] + "@lid")
         return ids
 
-    def atualizar(self, log=None):
+    def atualizar(self, log=None, timeout=900):
         """Traz as mensagens novas para o espelho e só então deixa ler. Sem isso o arquivo fica parado."""
         if not self.executavel:
             raise ErroFonte("Não achei o comando `wacli` para atualizar o espelho. "
@@ -97,9 +97,9 @@ class FonteWacli:
             log(f"Atualizando o espelho do wacli ({self.store})...")
         try:
             r = subprocess.run([self.executavel, "--store", self.store, "sync", "--once", "--idle-exit", "20s"],
-                               capture_output=True, text=True, timeout=900)
+                               capture_output=True, text=True, timeout=timeout)
         except subprocess.TimeoutExpired:
-            raise ErroFonte("O wacli não terminou de atualizar o espelho em 15 minutos. Nada foi lido desse espelho.")
+            raise ErroFonte(f"O wacli não terminou de atualizar o espelho em {timeout} segundos. Nada foi lido desse espelho.")
         if r.returncode != 0:
             detalhe = (r.stderr or r.stdout or f"código {r.returncode}").strip().splitlines()
             raise ErroFonte("Não consegui atualizar o espelho do wacli: " + (detalhe[-1] if detalhe else "sem detalhe")

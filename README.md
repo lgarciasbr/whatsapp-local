@@ -148,6 +148,23 @@ Depois de uma leitura bem-sucedida, o sync compara a data da última mensagem no
 
 Mensagens na mesma marca de tempo, edições e mudanças que não alteram o resumo podem esperar essa releitura. O histórico exportado continua preservado, inclusive mensagens removidas da fonte. Falhas de exportação ou transcrição não habilitam o atalho. Mesmo numa releitura, arquivos com conteúdo idêntico não são regravados.
 
+### Coleta separada (só o banco do wacli)
+
+```bash
+wa coletar                       # todas as contas com fonte wacli, sem precisar configurar sync ou CRM
+wa --conta pessoal coletar       # só uma conta
+```
+
+Busca mensagens para o banco local e encerra. Não baixa mídia, não transcreve, não exporta e não altera o CRM. WAHA e Desktop não são coletados por esse comando. Cada conta tem limite de 240 segundos; uma falha não impede a tentativa nas outras, mas o comando termina com código 1 se alguma falhar. Coleta e `wa sync` compartilham a mesma trava: uma execução não atropela a outra. Um wacli externo também pode ocupar a conta; nesse caso a coleta informa o conflito, sem parar o outro processo. `wa sync` continua atualizando o banco antes de exportar.
+
+Pode agendar `wa coletar` no cron, launchd ou outro agendador, separadamente do sync completo. `wa agendar` continua agendando o sync completo.
+
+#### Automação local no Orca
+
+Automação **Coleta WhatsApp Local**, ID `adfcadc1-31b4-433b-b8e1-bacdfc2a7a63`, a cada 30 minutos (`*/30 * * * *`, America/Sao_Paulo), no projeto whatsapp-local. A coleta roda no precheck, com `/bin/sh scripts/coletar-orca.sh`. Sucesso aparece como `skipped_precheck` e não abre agente; falha abre o Pi só para relatar o log, sem repetir coleta. “Run now” pula o precheck, portanto só mostra o log.
+
+O script usa a configuração do usuário, sem contas ou segredos embutidos. Log privado: `${XDG_STATE_HOME:-~/.local/state}/whatsapp-local/coleta.log`. O limite do precheck é 600 segundos (suficiente para as duas contas atuais); instalações com mais contas precisam dividir a coleta por conta ou usar outro agendador. Só roda com o Orca aberto e a máquina acordada. Para testar a coleta manualmente: `/bin/sh scripts/coletar-orca.sh`. Não depende do projeto de resumos de grupos.
+
 ### Agendamento
 
 `wa agendar` mostra o agendamento; `wa agendar --instalar` instala, a cada 30 minutos por padrão (`--minutos N`); `wa agendar --remover` desfaz. Se a seção `"sync"` não tiver nenhuma conversa nem a integração com o CRM, o sync avisa que não há nada configurado.

@@ -212,6 +212,12 @@ def cmd_exportar(cfg, args):
               f"{sync.plural(r['anexos'], 'anexo', 'anexos')}, {r['transcritos']} de {r['audios']} áudios transcritos.")
 
 
+def cmd_coletar(cfg, args):
+    resultados = sync.coletar(cfg, args.conta)
+    if any(t == "erro" for t, _, _ in resultados):
+        sys.exit(1)
+
+
 def cmd_sync(cfg, args):
     if not cfg.sync.get("conversas") and not cfg.sync.get("obsidian_crm"):
         raise ErroFonte(f"Nada para sincronizar: configure \"sync\" em {cfg.caminho}.")
@@ -291,6 +297,9 @@ def main(argv=None):
     sp.add_argument("--pasta", help="nome da pasta da conversa (padrão: 'Privado - Nome' ou 'Grupo Nome')")
     sp.add_argument("--nome", help="nome exibido (padrão: o da conversa)")
     sp.set_defaults(fn=cmd_exportar)
+
+    sp = sub.add_parser("coletar", help="atualiza só os bancos wacli, sem transcrever nem exportar")
+    sp.set_defaults(fn=cmd_coletar)
 
     sp = sub.add_parser("sync", help="atualiza as conversas configuradas em \"sync\"")
     sp.add_argument("--forcar", action="store_true", help="relê as conversas mesmo sem alteração no resumo")
